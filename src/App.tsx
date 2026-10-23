@@ -2435,7 +2435,6 @@ function MainApp({
 							platformCapabilities={platformCapabilities}
 							vaultBackend={vaultBackend}
 							locale={appLocale}
-							editable={!networkStatus.isOffline}
 						/>
 					</div>
 				</div>
