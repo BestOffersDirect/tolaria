@@ -38,7 +38,7 @@ function fakeIndexedDb() {
         })
         return req
       },
-    } as IDBFactory,
+    } as unknown as IDBFactory,
   }
 }
 
