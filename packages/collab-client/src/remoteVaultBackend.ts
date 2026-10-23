@@ -31,6 +31,7 @@ import {
 import { CollabProvider, type SocketLike } from "./collabProvider.ts";
 import { readCache, writeCache } from "./entriesCache.ts";
 import {
+	assertVaultPath,
 	encoded,
 	etagOf,
 	jsonWithStrings,
@@ -273,6 +274,7 @@ async function deleteFiles(
 	const deleted: string[] = [];
 	for (const path of paths) {
 		try {
+			assertVaultPath(path);
 			const file = await readFile(request, path);
 			const init = {
 				method: "DELETE",
@@ -317,6 +319,7 @@ async function writeFile(
 	file: { path: string; content: string },
 	options: VaultWriteOptions,
 ): Promise<VaultWriteResult> {
+	assertVaultPath(file.path);
 	const init = {
 		method: "PUT",
 		body: file.content,
@@ -387,6 +390,7 @@ function socketOrigin(baseUrl: string): string {
 }
 
 async function docIdOf(request: Request, path: string): Promise<string> {
+	assertVaultPath(path);
 	await whenCreated(path);
 	const response = await ok(await request(`${ROUTES.files}/${encoded(path)}`));
 	const docId = response.headers.get(DOC_ID_HEADER);

@@ -115,6 +115,13 @@ describe('notes created and deleted on the web', () => {
     expect(await fixture.desktop.read('inbox/plan (conflict 2026-10-23 2130).md')).toBe('# Web plan\n')
   })
 
+  it('are refused before any request when the path is not a vault path', async () => {
+    await expect(backend.files.write('../outside.md', '# No\n', { baseRevision: null })).rejects.toMatchObject({ status: 400 })
+    expect(await backend.files.delete(['/etc/passwd', 'a/./b.md'])).toEqual([])
+    await expect(open('../outside.md')).rejects.toMatchObject({ status: 400 })
+    expect(await fixture.desktop.log()).toHaveLength(1)
+  })
+
   it('open as a live document as soon as they are created', async () => {
     const creating = backend.files.write('fresh.md', '# Fresh\n', { baseRevision: null })
     const doc = await open('fresh.md')
