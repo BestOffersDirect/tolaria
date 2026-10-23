@@ -1,9 +1,14 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { ArrowSquareOut as ExternalLink, ArrowsClockwise as RefreshCw, Download, X } from '@phosphor-icons/react'
 import type { UpdateStatus, UpdateActions } from '../hooks/useUpdater'
 import { restartApp } from '../hooks/useUpdater'
 import { Button } from './ui/button'
 import { translate, type AppLocale } from '../lib/i18n'
+import { TOLARIA_DISCORD_INVITE_URL, CONTRIBUTION_ANALYTICS_EVENT } from '../constants/feedback'
+import { openExternalUrl } from '../utils/url'
+import { trackEvent } from '../lib/telemetry'
+
+const COMMUNITY_BANNER_DISMISSED_KEY = 'tolaria.community-banner.dismissed'
 
 interface UpdateBannerProps {
   status: UpdateStatus
@@ -17,6 +22,14 @@ function isUpdateBannerVisible(status: UpdateStatus): status is VisibleUpdateSta
   return status.state !== 'idle' && status.state !== 'error'
 }
 
+function readCommunityBannerDismissed(): boolean {
+  try {
+    return window.localStorage.getItem(COMMUNITY_BANNER_DISMISSED_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
 const bannerStyle = {
   display: 'flex',
   alignItems: 'center',
@@ -27,6 +40,7 @@ const bannerStyle = {
   fontSize: 13,
   color: 'var(--text-inverse)',
   flexShrink: 0,
+  order: -1,
 } satisfies CSSProperties
 
 const iconStyle = {
@@ -178,7 +192,46 @@ function renderBannerContent(status: VisibleUpdateStatus, actions: UpdateActions
 }
 
 export function UpdateBanner({ status, actions, locale = 'en' }: UpdateBannerProps) {
-  if (!isUpdateBannerVisible(status)) return null
+  const [communityDismissed, setCommunityDismissed] = useState(readCommunityBannerDismissed)
+
+  if (!isUpdateBannerVisible(status)) {
+    if (communityDismissed) return null
+    return (
+      <div data-testid="community-banner" style={{ ...bannerStyle, background: 'var(--accent-green)' }}>
+        <span>{translate(locale, 'communityBanner.invite')}</span>
+        <Button
+          type="button"
+          variant="link"
+          size="xs"
+          onClick={() => {
+            trackEvent(CONTRIBUTION_ANALYTICS_EVENT, { action: 'discord', surface: 'top_banner' })
+            void openExternalUrl(TOLARIA_DISCORD_INVITE_URL)
+          }}
+          style={{ ...primaryActionStyle, color: 'var(--accent-green)' }}
+        >
+          {translate(locale, 'feedback.community.cta')}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          data-testid="community-banner-dismiss"
+          onClick={() => {
+            try {
+              window.localStorage.setItem(COMMUNITY_BANNER_DISMISSED_KEY, 'true')
+            } catch {
+              // Keep the banner dismissed for this session if storage is unavailable.
+            }
+            setCommunityDismissed(true)
+          }}
+          style={dismissButtonStyle}
+          aria-label={translate(locale, 'communityBanner.dismiss')}
+        >
+          <X size={14} />
+        </Button>
+      </div>
+    )
+  }
 
   return <div data-testid="update-banner" style={bannerStyle}>{renderBannerContent(status, actions, locale)}</div>
 }

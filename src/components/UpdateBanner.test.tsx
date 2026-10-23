@@ -56,16 +56,16 @@ function renderBanner(status: UpdateStatus, actions = makeActions(), locale: 'en
 }
 
 describe('UpdateBanner', () => {
-  it('renders nothing when idle', () => {
+  it('shows the community banner when idle', () => {
     const status: UpdateStatus = { state: 'idle' }
-    const { container } = renderBanner(status)
-    expect(container.innerHTML).toBe('')
+    renderBanner(status)
+    expect(screen.getByTestId('community-banner')).toBeInTheDocument()
   })
 
-  it('renders nothing on error state', () => {
+  it('shows the community banner on error state', () => {
     const status: UpdateStatus = { state: 'error' }
-    const { container } = renderBanner(status)
-    expect(container.innerHTML).toBe('')
+    renderBanner(status)
+    expect(screen.getByTestId('community-banner')).toBeInTheDocument()
   })
 
   it('shows immediate feedback while checking for updates', () => {
