@@ -111,7 +111,6 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // Network failed, try cache
-          const cacheName = isEntriesRequest(url) ? API_CACHE : NOTES_CACHE;
           return caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {
               return cachedResponse;
