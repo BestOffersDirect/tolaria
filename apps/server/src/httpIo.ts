@@ -19,6 +19,7 @@ const BASE_HEADERS = {
   [PROTOCOL_HEADER]: PROTOCOL_VERSION,
   'cache-control': 'no-store',
   'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
 }
 
 /** The value of a header that may legally arrive more than once: the first one counts. */
