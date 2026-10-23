@@ -23,9 +23,10 @@ export function etagOf(response: Response): string {
 
 export async function ok(response: Response): Promise<Response> {
 	if (response.ok) return response;
+	const route = response.url ? new URL(response.url).pathname : "the request";
 	throw new RemoteError(
 		response.status,
-		`the server answered ${response.status} for ${new URL(response.url).pathname}`,
+		`the server answered ${response.status} for ${route}`,
 	);
 }
 
