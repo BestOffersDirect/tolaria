@@ -35,17 +35,8 @@ import { registerServiceWorker } from './lib/serviceWorker'
 
 markStartupPhase('renderer_module_loaded')
 
-// Register service worker after first paint to avoid blocking startup
-// (web build only, not Tauri)
-if (typeof requestIdleCallback !== 'undefined') {
-  requestIdleCallback(() => {
-    void registerServiceWorker()
-  })
-} else {
-  setTimeout(() => {
-    void registerServiceWorker()
-  }, 1)
-}
+// Register service worker for offline support (web build only, not Tauri)
+void registerServiceWorker()
 
 const TLDRAW_CONTEXT_MENU_SELECTOR = '.tldraw-whiteboard'
 const MACOS_FULLSCREEN_CHROME_CLASS = 'mac-chrome-fullscreen'

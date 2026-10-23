@@ -6,21 +6,10 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-const TEST_TOKEN = 'e2e-token-not-a-secret-0123456789';
-
-async function configureRemoteVault(page: Page): Promise<void> {
-  await page.addInitScript((token) => {
-    window.TOLARIA_REMOTE_URL = window.location.origin;
-    window.TOLARIA_REMOTE_TOKEN = token;
-  }, TEST_TOKEN);
-}
+const TEST_VAULT_URL = process.env.TEST_VAULT_URL || 'http://localhost:5201';
 
 async function waitForAppReady(page: Page) {
-  await expect(
-    page
-      .getByTestId('note-list-container')
-      .getByText('Welcome', { exact: true }),
-  ).toBeVisible({ timeout: 10000 });
+  await page.waitForSelector('[data-testid="app-shell"]', { timeout: 10000 });
   // Wait a bit for the service worker to register
   await page.waitForTimeout(1000);
 }
@@ -42,8 +31,8 @@ async function openNote(page: Page, noteTitle: string) {
 
 test.describe('Offline mode', () => {
   test.beforeEach(async ({ page }) => {
-    await configureRemoteVault(page);
-    await page.goto('/');
+    // Navigate to the app
+    await page.goto(TEST_VAULT_URL);
     await waitForAppReady(page);
   });
 

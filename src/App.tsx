@@ -2435,7 +2435,7 @@ function MainApp({
 							platformCapabilities={platformCapabilities}
 							vaultBackend={vaultBackend}
 							locale={appLocale}
-							editable={platformCapabilities.git || !networkStatus.isOffline}
+							editable={!networkStatus.isOffline}
 						/>
 					</div>
 				</div>
