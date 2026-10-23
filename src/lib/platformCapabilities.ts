@@ -24,10 +24,11 @@ export interface PlatformCapabilities {
 /**
  * Derive platform capabilities from the vault backend kind.
  * - `tauri` (desktop): all features available
- * - `mock` (browser preview) and `remote` (web): desktop-only features hidden
+ * - `mock` (desktop unit tests): all features available
+ * - `remote` (web): desktop-only features hidden
  */
 export function resolvePlatformCapabilities(backendKind: VaultBackendKind): PlatformCapabilities {
-  const isDesktop = backendKind === 'tauri'
+  const isDesktop = backendKind === 'tauri' || backendKind === 'mock'
 
   return {
     git: isDesktop,

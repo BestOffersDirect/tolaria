@@ -174,9 +174,18 @@ function App() {
 
 function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | null }) {
   const aiWorkspaceWindow = false
-  // Platform capabilities: desktop shows all features, web/mock hide desktop-only features
+  // Platform capabilities: desktop shows all features, web/remote hide desktop-only features
   const platformCapabilities = useMemo(() => {
-    const backendKind = isTauri() ? 'tauri' : 'mock'
+    if (isTauri()) return resolvePlatformCapabilities('tauri')
+    
+    // Check if remote backend is configured (web build with server)
+    const hasRemoteConfig = typeof window !== 'undefined' &&
+      'TOLARIA_REMOTE_URL' in window &&
+      'TOLARIA_REMOTE_TOKEN' in window &&
+      !!(window as { TOLARIA_REMOTE_URL?: string }).TOLARIA_REMOTE_URL &&
+      !!(window as { TOLARIA_REMOTE_TOKEN?: string }).TOLARIA_REMOTE_TOKEN
+    
+    const backendKind = hasRemoteConfig ? 'remote' : 'mock'
     return resolvePlatformCapabilities(backendKind)
   }, [])
   const [selection, setSelection] = useState<SidebarSelection>(DEFAULT_SELECTION)
