@@ -786,6 +786,9 @@ jobs:
           paths:
             - ~/.cache/ms-playwright
       - run:
+          name: Web typecheck
+          command: pnpm typecheck:web
+      - run:
           name: Server tests with coverage
           command: pnpm test:server
       - run:
