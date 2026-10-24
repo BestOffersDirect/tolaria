@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	isRemoteBrowserShell,
 	isSyncPillBusy,
+	isSyncPillReadOnly,
 	resolveSyncPillState,
 	type SyncPillInputs,
 	syncPillDescription,
+	syncPillLabel,
 } from "./syncPillState";
 
 const IDLE: SyncPillInputs = {
@@ -38,6 +40,19 @@ describe("isSyncPillBusy", () => {
 		expect(isSyncPillBusy("synced")).toBe(false);
 		expect(isSyncPillBusy("offline")).toBe(false);
 		expect(isSyncPillBusy("conflict")).toBe(false);
+	});
+});
+
+describe("syncPillLabel", () => {
+	it("says the vault is read-only while the browser is offline", () => {
+		expect(isSyncPillReadOnly("offline", true)).toBe(true);
+		expect(syncPillLabel("offline", true)).toBe("status.offline.readOnlyLabel");
+	});
+
+	it("names the state otherwise", () => {
+		expect(isSyncPillReadOnly("offline", false)).toBe(false);
+		expect(syncPillLabel("offline", false)).toBe("status.offline.label");
+		expect(syncPillLabel("conflict", true)).toBe("status.sync.conflict");
 	});
 });
 

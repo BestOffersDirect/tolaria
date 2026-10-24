@@ -31,6 +31,8 @@ interface SyncPillProps {
 	/** The underlying status, when it says more than the pill state (the collab surface). */
 	status?: string;
 	className?: string;
+	/** The vault cannot be edited meanwhile (offline on the web). */
+	readOnly?: boolean;
 }
 
 /**
@@ -44,6 +46,7 @@ export function SyncPill({
 	testId = "sync-pill",
 	status = state,
 	className,
+	readOnly = false,
 }: SyncPillProps) {
 	const Icon = ICONS[state];
 	const busy = isSyncPillBusy(state);
@@ -56,6 +59,7 @@ export function SyncPill({
 			aria-busy={busy || undefined}
 			data-state={state}
 			data-status={status}
+			data-read-only={readOnly || undefined}
 			data-testid={testId}
 		>
 			<Icon

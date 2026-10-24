@@ -12,9 +12,10 @@ import {
 import { type AppLocale, translate } from "../../lib/i18n";
 import { SyncPill } from "../SyncPill";
 import {
+	isSyncPillReadOnly,
 	resolveSyncPillState,
-	SYNC_PILL_LABELS,
 	syncPillDescription,
+	syncPillLabel,
 } from "./syncPillState";
 
 interface WebSyncPillProps {
@@ -64,7 +65,8 @@ export function WebSyncPill({
 	return (
 		<SyncPill
 			state={state}
-			label={translate(locale, SYNC_PILL_LABELS[state])}
+			label={translate(locale, syncPillLabel(state, isOffline))}
+			readOnly={isSyncPillReadOnly(state, isOffline)}
 			description={translate(locale, description, {
 				file: String(conflictCopy),
 			})}

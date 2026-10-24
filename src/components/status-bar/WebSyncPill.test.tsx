@@ -74,9 +74,19 @@ describe("WebSyncPill", () => {
 		expect(renderPill()).toHaveAttribute("data-state", "syncing");
 	});
 
+	it("is offline, but not read-only, when the server is unreachable", () => {
+		publishDocument("offline");
+		const pill = renderPill();
+		expect(pill).toHaveAttribute("data-state", "offline");
+		expect(pill).not.toHaveAttribute("data-read-only");
+		expect(pill).toHaveTextContent("Offline");
+	});
+
 	it("is offline without a network, read-only", () => {
 		const pill = renderPill({ isOffline: true });
 		expect(pill).toHaveAttribute("data-state", "offline");
+		expect(pill).toHaveAttribute("data-read-only", "true");
+		expect(pill).toHaveTextContent("Offline · read-only");
 		expect(pill).toHaveAttribute(
 			"title",
 			"No internet connection. Notes are read-only until you reconnect.",

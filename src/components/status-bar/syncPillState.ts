@@ -54,6 +54,23 @@ export const SYNC_PILL_LABELS: Record<SyncPillState, TranslationKey> = {
 	conflict: "status.sync.conflict",
 };
 
+/** Without a network the web vault is read-only, and the pill says so. */
+export function isSyncPillReadOnly(
+	state: SyncPillState,
+	browserOffline: boolean,
+): boolean {
+	return state === "offline" && browserOffline;
+}
+
+export function syncPillLabel(
+	state: SyncPillState,
+	browserOffline: boolean,
+): TranslationKey {
+	return isSyncPillReadOnly(state, browserOffline)
+		? "status.offline.readOnlyLabel"
+		: SYNC_PILL_LABELS[state];
+}
+
 /** The description behind the pill's label; offline depends on what is offline. */
 export function syncPillDescription(
 	state: SyncPillState,
