@@ -5,23 +5,26 @@ import {
 	type IconProps,
 	Warning,
 } from "@phosphor-icons/react";
-import type { ComponentType } from "react";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { isSyncPillBusy, type SyncPillState } from "./status-bar/syncPillState";
 import { Badge } from "./ui/badge";
 
-const ICONS: Record<SyncPillState, ComponentType<IconProps>> = {
-	connecting: ArrowsClockwise,
-	syncing: ArrowsClockwise,
-	synced: CheckCircle,
-	offline: CloudSlash,
-	conflict: Warning,
-};
+const ICONS = new Map<SyncPillState, (props: IconProps) => ReactNode>([
+	["connecting", (props) => <ArrowsClockwise {...props} />],
+	["syncing", (props) => <ArrowsClockwise {...props} />],
+	["synced", (props) => <CheckCircle {...props} />],
+	["offline", (props) => <CloudSlash {...props} />],
+	["conflict", (props) => <Warning {...props} />],
+]);
 
-const TONES: Partial<Record<SyncPillState, string>> = {
-	offline: "bg-[var(--feedback-error-bg)] text-[var(--destructive)]",
-	conflict: "text-[var(--accent-orange)]",
-};
+/** IconProps leaves data attributes out; the icon still takes them. */
+const ICON_TEST_ID = { "data-testid": "sync-pill-icon" } as IconProps;
+
+const TONES = new Map<SyncPillState, string>([
+	["offline", "bg-[var(--feedback-error-bg)] text-[var(--destructive)]"],
+	["conflict", "text-[var(--accent-orange)]"],
+]);
 
 interface SyncPillProps {
 	state: SyncPillState;
@@ -48,12 +51,12 @@ export function SyncPill({
 	className,
 	readOnly = false,
 }: SyncPillProps) {
-	const Icon = ICONS[state];
+	const renderIcon = ICONS.get(state) ?? ICONS.get("synced");
 	const busy = isSyncPillBusy(state);
 	return (
 		<Badge
 			variant="secondary"
-			className={cn("sync-pill gap-1 text-[12px]", TONES[state], className)}
+			className={cn("sync-pill gap-1 text-[12px]", TONES.get(state), className)}
 			role="status"
 			title={description}
 			aria-busy={busy || undefined}
@@ -62,13 +65,13 @@ export function SyncPill({
 			data-read-only={readOnly || undefined}
 			data-testid={testId}
 		>
-			<Icon
-				size={12}
-				weight="bold"
-				aria-hidden="true"
-				className={cn(busy && "animate-spin")}
-				data-testid="sync-pill-icon"
-			/>
+			{renderIcon?.({
+				size: 12,
+				weight: "bold",
+				"aria-hidden": true,
+				className: cn(busy && "animate-spin"),
+				...ICON_TEST_ID,
+			})}
 			{label}
 		</Badge>
 	);

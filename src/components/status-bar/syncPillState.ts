@@ -46,13 +46,17 @@ export function isSyncPillBusy(state: SyncPillState): boolean {
 	return state === "connecting" || state === "syncing";
 }
 
-export const SYNC_PILL_LABELS: Record<SyncPillState, TranslationKey> = {
-	connecting: "collab.status.connecting",
-	syncing: "collab.status.syncing",
-	synced: "status.sync.synced",
-	offline: "status.offline.label",
-	conflict: "status.sync.conflict",
-};
+const SYNC_PILL_LABELS = new Map<SyncPillState, TranslationKey>([
+	["connecting", "collab.status.connecting"],
+	["syncing", "collab.status.syncing"],
+	["synced", "status.sync.synced"],
+	["offline", "status.offline.label"],
+	["conflict", "status.sync.conflict"],
+]);
+
+function stateLabel(state: SyncPillState): TranslationKey {
+	return SYNC_PILL_LABELS.get(state) ?? "status.sync.synced";
+}
 
 /** Without a network the web vault is read-only, and the pill says so. */
 export function isSyncPillReadOnly(
@@ -68,7 +72,7 @@ export function syncPillLabel(
 ): TranslationKey {
 	return isSyncPillReadOnly(state, browserOffline)
 		? "status.offline.readOnlyLabel"
-		: SYNC_PILL_LABELS[state];
+		: stateLabel(state);
 }
 
 /** The description behind the pill's label; offline depends on what is offline. */
@@ -82,7 +86,7 @@ export function syncPillDescription(
 			: "collab.status.offline";
 	if (state === "conflict") return "collab.conflict";
 	if (state === "synced") return "collab.status.synced";
-	return SYNC_PILL_LABELS[state];
+	return stateLabel(state);
 }
 
 /** The browser build talking to a Tolaria server: the web status bar shows the sync pill. */
