@@ -1,6 +1,7 @@
 import type { VaultEntry } from "../types";
 import { NOTE_FORMAT_SHEET, type NoteFormat } from "../utils/noteFormat";
 import { canonicalFrontmatterKey } from "../utils/systemMetadata";
+import { isTypeInstanceDefault } from "../utils/typeInstanceDefaults.mjs";
 import type { TemplateLookupParams } from "./noteCreationBase";
 
 export interface NoteContentParams {
@@ -13,7 +14,11 @@ export interface NoteContentParams {
 	defaults?: TypeInstanceDefault[];
 }
 
-export type DefaultValue = string | number | boolean | string[];
+export type DefaultValue =
+	| string
+	| number
+	| boolean
+	| Array<string | number | boolean>;
 
 export interface TypeInstanceDefault {
 	key: string;
@@ -42,13 +47,6 @@ function relationshipDefaultValue(refs: string[]): DefaultValue | null {
 	return refs.length === 1 ? refs[0] : refs;
 }
 
-function isDefaultablePropertyValue(
-	value: unknown,
-): value is string | number | boolean {
-	if (typeof value === "string") return value.trim().length > 0;
-	return typeof value === "number" || typeof value === "boolean";
-}
-
 function resolveTypeEntry({
 	entries,
 	typeName,
@@ -60,7 +58,7 @@ function resolveTypeEntry({
 
 function collectPropertyDefaults(typeEntry: VaultEntry): TypeInstanceDefault[] {
 	return Object.entries(typeEntry.properties ?? {}).flatMap(([key, value]) =>
-		isDefaultablePropertyValue(value)
+		isTypeInstanceDefault(key, value, canonicalFrontmatterKey)
 			? [{ key, value, kind: "property" as const }]
 			: [],
 	);
@@ -72,7 +70,9 @@ function collectRelationshipDefaults(
 	return Object.entries(typeEntry.relationships ?? {}).flatMap(
 		([key, refs]) => {
 			const value = relationshipDefaultValue(refs);
-			return value ? [{ key, value, kind: "relationship" as const }] : [];
+			return value && isTypeInstanceDefault(key, value, canonicalFrontmatterKey)
+				? [{ key, value, kind: "relationship" as const }]
+				: [];
 		},
 	);
 }
