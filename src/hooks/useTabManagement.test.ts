@@ -66,11 +66,7 @@ async function selectNoteWithTimers(result: HookState, overrides: Partial<VaultE
 
 async function withFakeTimers(run: () => Promise<void>) {
   vi.useFakeTimers()
-  try {
-    await run()
-  } finally {
-    vi.useRealTimers()
-  }
+  await run().finally(() => vi.useRealTimers())
 }
 
 async function replaceActiveNote(result: HookState, overrides: Partial<VaultEntry>) {
@@ -124,7 +120,7 @@ function silenceConsoleWarn() {
 type TabManagementOptions = Parameters<typeof useTabManagement>[0]
 type NoteFailureCallback = ReturnType<typeof vi.fn>
 
-async function expectFailedSelectionClearsNote(options: {
+interface FailedSelectionOptions {
   errorMessage: string
   selectedEntry: Partial<VaultEntry>
   hookOptions?: TabManagementOptions
@@ -132,23 +128,24 @@ async function expectFailedSelectionClearsNote(options: {
     mock: NoteFailureCallback
     entry: Partial<VaultEntry>
   }
-}) {
+}
+
+async function expectFailedSelectionClearsNote(options: FailedSelectionOptions) {
   vi.mocked(mockInvoke).mockRejectedValueOnce(new Error(options.errorMessage))
   const warnSpy = silenceConsoleWarn()
+  await selectFailingNote(options).finally(() => warnSpy.mockRestore())
+}
 
-  try {
-    const { result } = renderHook(() => useTabManagement(options.hookOptions))
-    await selectNote(result, options.selectedEntry)
+async function selectFailingNote(options: FailedSelectionOptions) {
+  const { result } = renderHook(() => useTabManagement(options.hookOptions))
+  await selectNote(result, options.selectedEntry)
 
-    expectEmptyNoteState(result)
-    if (options.expectedCallback) {
-      expect(options.expectedCallback.mock).toHaveBeenCalledWith(
-        expect.objectContaining(options.expectedCallback.entry),
-        expect.any(Error),
-      )
-    }
-  } finally {
-    warnSpy.mockRestore()
+  expectEmptyNoteState(result)
+  if (options.expectedCallback) {
+    expect(options.expectedCallback.mock).toHaveBeenCalledWith(
+      expect.objectContaining(options.expectedCallback.entry),
+      expect.any(Error),
+    )
   }
 }
 

@@ -21,7 +21,7 @@ function setTauriRuntime(value: boolean | undefined) {
 
 /** The arguments as Tauri serializes them: keys left undefined are not sent. */
 function sentArgs(callIndex = 0): unknown {
-  return JSON.parse(JSON.stringify(tauriInvoke.mock.calls[callIndex][1]))
+  return JSON.parse(JSON.stringify(tauriInvoke.mock.calls.at(callIndex)?.[1]))
 }
 
 function callbacks(): FrontmatterApplyCallbacks {
