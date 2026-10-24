@@ -62,6 +62,13 @@ describe('keepCaretAboveKeyboard', () => {
     expect(scroller.scrollTop).toBe(0)
   })
 
+  it('leaves an editor that cannot scroll alone', () => {
+    const scroller = editorWithCaret(rect(380, 400))
+    scroller.style.overflowY = 'visible'
+    expect(() => { keepCaretAboveKeyboard(300) }).not.toThrow()
+    expect(scroller.scrollTop).toBe(0)
+  })
+
   it('does nothing when no editor has focus', () => {
     const scroller = editorWithCaret(rect(380, 400))
     ;(document.activeElement as HTMLElement).blur()
