@@ -19,7 +19,7 @@ describe('PhoneNoteBackBar', () => {
 
   it('renders nothing off the phone layout, and appears when the phone layout starts', () => {
     const { container } = render(<PhoneNoteBackBar locale="en" />)
-    expect(container.innerHTML).toBe('')
+    expect(container.childElementCount).toBe(0)
 
     act(() => { publishPhoneNoteStack({ active: true, backToList: vi.fn(), showNote: vi.fn() }) })
 

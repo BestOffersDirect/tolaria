@@ -36,7 +36,7 @@ interface PhoneNoteStackOptions {
 
 function enteredFromNoteList(): boolean {
   const state: unknown = window.history.state
-  return typeof state === 'object' && state !== null && (state as Record<string, unknown>)[BACK_TO_NOTE_LIST_STATE_KEY] === true
+  return typeof state === 'object' && state !== null && Reflect.get(state, BACK_TO_NOTE_LIST_STATE_KEY) === true
 }
 
 /** A note opened after startup (list, wikilink, search, back/forward) takes the screen. */
