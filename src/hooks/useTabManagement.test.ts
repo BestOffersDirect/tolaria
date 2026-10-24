@@ -12,6 +12,7 @@ import {
   NOTE_CONTENT_ENTRY_MAX_BYTES,
   NOTE_CONTENT_PREFETCH_CONCURRENCY,
 } from './useTabManagement'
+import { getCachedNoteContentEntry } from './noteContentCache'
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 vi.mock('../mock-tauri', () => ({
@@ -81,8 +82,17 @@ async function replaceActiveNote(result: HookState, overrides: Partial<VaultEntr
 async function prefetchResolvedContent(path: string, content: string, entry?: VaultEntry) {
   mockNoteContent({ [path]: content })
   prefetchNoteContent(entry ?? path)
-  await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
+  await waitForSettledPrefetch(path)
+  expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1)
   return mockInvoke
+}
+
+/** The prefetch has either cached its content or given the entry up. */
+async function waitForSettledPrefetch(path: string) {
+  await vi.waitFor(() => {
+    const entry = getCachedNoteContentEntry(path)
+    expect(entry === null || entry.value !== null).toBe(true)
+  })
 }
 
 function mockNoteContent(contentByPath: Record<string, string>) {
@@ -252,10 +262,8 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('switches the active path immediately while the next note is still loading', async () => {
-      let resolveContent: (value: string) => void
-      vi.mocked(mockInvoke).mockImplementationOnce(
-        () => new Promise<string>((resolve) => { resolveContent = resolve }),
-      )
+      const pending = createDeferred<string>()
+      vi.mocked(mockInvoke).mockImplementationOnce(() => pending.promise)
 
       const { result } = renderHook(() => useTabManagement())
       void act(() => {
@@ -266,7 +274,7 @@ describe('useTabManagement (single-note model)', () => {
       expect(result.current.tabs).toEqual([])
 
       await act(async () => {
-        resolveContent!('# Pending content')
+        pending.resolve('# Pending content')
       })
 
       expect(result.current.tabs[0].entry.path).toBe('/vault/note/pending.md')
@@ -870,9 +878,8 @@ describe('useTabManagement (single-note model)', () => {
         .mockResolvedValueOnce('# Recovered content')
 
       prefetchNoteContent('/vault/note/recovered.md')
-      await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
-      await Promise.resolve()
-      await Promise.resolve()
+      await waitForSettledPrefetch('/vault/note/recovered.md')
+      expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1)
 
       const { result } = renderHook(() => useTabManagement())
       await selectNote(result, { path: '/vault/note/recovered.md', title: 'Recovered' })
@@ -1080,11 +1087,11 @@ describe('useTabManagement (single-note model)', () => {
 
   describe('rapid switching safety', () => {
     it('only activates the last note when switching rapidly', async () => {
-      let resolveA: (v: string) => void
-      let resolveB: (v: string) => void
+      const contentA = createDeferred<string>()
+      const contentB = createDeferred<string>()
       vi.mocked(mockInvoke)
-        .mockImplementationOnce(() => new Promise<string>((r) => { resolveA = r as (v: string) => void }))
-        .mockImplementationOnce(() => new Promise<string>((r) => { resolveB = r as (v: string) => void }))
+        .mockImplementationOnce(() => contentA.promise)
+        .mockImplementationOnce(() => contentB.promise)
 
       const { result } = renderHook(() => useTabManagement())
 
@@ -1100,8 +1107,8 @@ describe('useTabManagement (single-note model)', () => {
         await Promise.resolve()
       })
 
-      await act(async () => { resolveB!('# B content') })
-      await act(async () => { resolveA!('# A content') })
+      await act(async () => { contentB.resolve('# B content') })
+      await act(async () => { contentA.resolve('# A content') })
 
       await vi.waitFor(() => expect(selectADone && selectBDone).toBe(true))
 
