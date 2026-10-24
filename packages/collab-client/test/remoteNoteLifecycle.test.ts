@@ -211,6 +211,16 @@ describe('rename naming', () => {
     await expect(renameNote(answer, { path: 'x.md', newTitle: 'Idea' })).rejects.toMatchObject({ status: expect.any(Number) })
   })
 
+  it.each([undefined, 'Idea'])('sends nothing when the name fits and the old title is %j', async (oldTitle) => {
+    const request = () => Promise.reject(new Error('no request expected'))
+
+    await expect(renameNote(request, { path: 'idea.md', newTitle: 'Idea', oldTitle })).resolves.toEqual({
+      newPath: 'idea.md',
+      updatedFiles: 0,
+      failedUpdates: 0,
+    })
+  })
+
   it('gives up when every candidate is taken', async () => {
     const taken = () => Promise.resolve(new Response('{}', { status: 409 }))
 

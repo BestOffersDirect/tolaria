@@ -102,6 +102,11 @@ export function renameCandidate(
 	return `${folder}${stem}${suffix}.md`;
 }
 
+/** A title rename whose file name already fits still sets the title, when it is a new one. */
+function retitles(rename: VaultRenameRequest): boolean {
+	return "newTitle" in rename && rename.oldTitle !== undefined && rename.oldTitle !== rename.newTitle;
+}
+
 function renameBody(rename: VaultRenameRequest, to: string): RenameBody {
 	const body: RenameBody = { from: rename.path, to, rewriteLinks: true };
 	if (!("newTitle" in rename)) return body;
@@ -129,7 +134,7 @@ async function moveTo(request: Request, body: RenameBody): Promise<Moved | null>
  * Renames a note within its folder to the first free name for the requested title or stem.
  * The server rewrites the wikilinks to it in every other note in the same commit, and sets
  * the new title as the note's `title` property when it changed, as the desktop does. A title
- * rename that keeps the file name still updates that property.
+ * rename that keeps the file name still updates that property when the old title is known.
  */
 export async function renameNote(
 	request: Request,
@@ -139,7 +144,7 @@ export async function renameNote(
 	const target = renameTarget(rename);
 	for (let attempt = 0; attempt < RENAME_ATTEMPTS; attempt++) {
 		const to = renameCandidate(target, attempt);
-		if (to === rename.path && !("newTitle" in rename)) return renamed({ path: to, updatedFiles: 0 });
+		if (to === rename.path && !retitles(rename)) return renamed({ path: to, updatedFiles: 0 });
 		const moved = await moveTo(request, renameBody(rename, to));
 		if (!moved) continue;
 		moveOpenDocs({ from: rename.path, to: moved.path });
