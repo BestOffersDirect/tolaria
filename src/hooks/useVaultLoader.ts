@@ -22,6 +22,7 @@ import {
 } from './vaultLoaderCommands'
 import { normalizeVaultEntry } from '../utils/vaultMetadataNormalization'
 import { isNoteWindow } from '../utils/windowMode'
+import { useVaultEntriesStaleReload } from '../lib/vaultEntriesStale'
 import {
   recordActiveVaultSnapshot,
   recordActiveVaultUsable,
@@ -1247,6 +1248,7 @@ export function useVaultLoader(
   })
 
   useGitignoredVisibilityReloads(vaultReloads)
+  useVaultEntriesStaleReload(vaultReloads.reloadVault)
   useVaultChromeReloadEffect(vaultPath, vaultReloads.reloadFolders, vaultReloads.reloadViews)
 
   useVaultLoaderStartup({

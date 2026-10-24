@@ -36,6 +36,7 @@ import { PropertyChips } from './note-item/PropertyChips'
 import { ChangeNoteContent } from './note-item/ChangeNoteContent'
 import { workspaceForEntry } from '../utils/workspaces'
 import { WorkspaceInitialsBadge } from './WorkspaceInitialsBadge'
+import { ConflictCopyBadge } from './ConflictCopyBadge'
 import { useDateDisplayFormat } from '../hooks/useAppPreferences'
 import { writeNoteDragData } from '../utils/noteDragDrop'
 
@@ -376,6 +377,7 @@ function NoteTitleRow({
       <NoteTitleIcon icon={entry.icon} size={15} className="mr-1" testId="note-title-icon" />
       {entry.title}
       {!isBinary && <StateBadge archived={entry.archived} />}
+      {!isBinary && <ConflictCopyBadge path={entry.path} />}
     </div>
   )
 }
