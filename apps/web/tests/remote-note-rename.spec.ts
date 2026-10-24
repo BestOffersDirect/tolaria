@@ -47,6 +47,14 @@ async function createNote(
 	expect(response.status()).toBe(201);
 }
 
+/** Deletes a note this test made, so the shared vault's note list stays as the other specs expect. */
+async function deleteNote(request: APIRequestContext, path: NotePath): Promise<void> {
+	const read = await request.get(`/v1/files/${path}`, { headers: AUTH });
+	const etag = read.headers().etag;
+	if (!read.ok() || !etag) return;
+	await request.delete(`/v1/files/${path}`, { headers: { ...AUTH, "if-match": etag } });
+}
+
 async function serverContent(
 	request: APIRequestContext,
 	path: NotePath,
@@ -101,36 +109,42 @@ test("renaming a note on the web rewrites the links to it in one commit", async 
 	await createNote(request, linker);
 
 	const context = await browser.newContext(testInfo.project.use);
-	await configureRemoteVault(context);
-	const reader = await context.newPage();
-	await openNote(reader, linker);
-	await expect(liveLink(reader, `${folder}/target`)).toBeVisible();
+	try {
+		await configureRemoteVault(context);
+		const reader = await context.newPage();
+		await openNote(reader, linker);
+		await expect(liveLink(reader, `${folder}/target`)).toBeVisible();
 
-	const page = await context.newPage();
-	await openNote(page, target);
-	await page.getByTestId("breadcrumb-filename-trigger").dblclick();
-	await page.getByTestId("breadcrumb-filename-input").fill(renamedStem);
-	await page.getByTestId("breadcrumb-filename-input").press("Enter");
+		const page = await context.newPage();
+		await openNote(page, target);
+		await page.getByTestId("breadcrumb-filename-trigger").dblclick();
+		await page.getByTestId("breadcrumb-filename-input").fill(renamedStem);
+		await page.getByTestId("breadcrumb-filename-input").press("Enter");
 
-	await expect(page.getByText("Updated 1 note")).toBeVisible({ timeout: 10_000 });
-	const renamed = `${folder}/${renamedStem}`;
-	await expect
-		.poll(() => serverContent(request, linker.path), { timeout: 10_000 })
-		.toBe(`# ${linkerTitle}\n\nSee [[${renamed}]] and [[${renamed}|the target]].\n`);
-	expect(await serverContent(request, `${renamed}.md`)).toBe(target.content);
-	// One commit holds the move and the rewrite, and it reached the remote.
-	await expect
-		.poll(() => lastRemoteCommit(), { timeout: 10_000 })
-		.toEqual([
-			`  ${folder}/linker.md`,
-			`  ${renamed}.md`,
-			`  ${folder}/target.md`,
-			`Rename ${folder}/target.md to ${renamed}.md`,
-		]);
+		await expect(page.getByText("Updated 1 note")).toBeVisible({ timeout: 10_000 });
+		const renamed = `${folder}/${renamedStem}`;
+		await expect
+			.poll(() => serverContent(request, linker.path), { timeout: 10_000 })
+			.toBe(`# ${linkerTitle}\n\nSee [[${renamed}]] and [[${renamed}|the target]].\n`);
+		expect(await serverContent(request, `${renamed}.md`)).toBe(target.content);
+		// One commit holds the move and the rewrite, and it reached the remote.
+		await expect
+			.poll(() => lastRemoteCommit(), { timeout: 10_000 })
+			.toEqual([
+				`  ${folder}/linker.md`,
+				`  ${renamed}.md`,
+				`  ${folder}/target.md`,
+				`Rename ${folder}/target.md to ${renamed}.md`,
+			]);
 
-	// The linking note, open in the other tab, shows the new links without a reload.
-	await expect(liveLink(reader, renamed)).toBeVisible({ timeout: 10_000 });
-	await expect(liveLink(reader, `${renamed}|the target`)).toBeVisible();
-	await expect(liveLink(reader, `${folder}/target`)).toHaveCount(0);
-	await context.close();
+		// The linking note, open in the other tab, shows the new links without a reload.
+		await expect(liveLink(reader, renamed)).toBeVisible({ timeout: 10_000 });
+		await expect(liveLink(reader, `${renamed}|the target`)).toBeVisible();
+		await expect(liveLink(reader, `${folder}/target`)).toHaveCount(0);
+	} finally {
+		await context.close();
+		for (const path of [target.path, linker.path, `${folder}/${renamedStem}.md`]) {
+			await deleteNote(request, path);
+		}
+	}
 });
