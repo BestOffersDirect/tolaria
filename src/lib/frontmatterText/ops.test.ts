@@ -61,3 +61,9 @@ describe('updateFrontmatterContent with input the desktop would write unsafely',
       .toThrow(UnsafeFrontmatterEditError)
   })
 })
+
+describe('updateFrontmatterContent with an empty key', () => {
+  it('refuses it instead of writing a null key', () => {
+    expect(() => updateFrontmatterContent('---\ntitle: T\n---\n', '', 'x')).toThrow(UnsafeFrontmatterEditError)
+  })
+})

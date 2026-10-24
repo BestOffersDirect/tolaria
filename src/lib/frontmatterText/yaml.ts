@@ -1,4 +1,4 @@
-import { assertBlockLines, assertPlainScalar, assertQuotable, assertSingleLine } from './unsafeText'
+import { assertBlockLines, assertKey, assertPlainScalar, assertQuotable, assertSingleLine } from './unsafeText'
 
 /**
  * YAML formatting of the desktop writer (`src-tauri/src/frontmatter/yaml.rs`), ported as is
@@ -16,7 +16,10 @@ type PlainText = string
 type YamlText = string
 
 const SPECIAL_FLOATS = new Set(['inf', 'infinity', 'nan'])
-const DIGITS = /^\d*$/
+/** Only ASCII digits, or nothing. */
+function isDigits(text: PlainText): boolean {
+  return [...text].every(char => char >= '0' && char <= '9')
+}
 
 function withoutSign(text: PlainText): PlainText {
   return text.startsWith('+') || text.startsWith('-') ? text.slice(1) : text
@@ -25,20 +28,20 @@ function withoutSign(text: PlainText): PlainText {
 /** Digits with at most one `.`, and at least one digit: `1`, `1.`, `.5`, `1.5`. */
 function isDecimal(text: PlainText): boolean {
   const [whole = '', fraction = '', ...more] = text.split('.')
-  return more.length === 0 && DIGITS.test(whole) && DIGITS.test(fraction) && `${whole}${fraction}` !== ''
+  return more.length === 0 && isDigits(whole) && isDigits(fraction) && `${whole}${fraction}` !== ''
 }
 
 function isExponent(text: PlainText | undefined): boolean {
   if (text === undefined) return true
   const digits = withoutSign(text)
-  return digits !== '' && DIGITS.test(digits)
+  return digits !== '' && isDigits(digits)
 }
 
 /** Rust's `str::parse::<f64>` grammar: no whitespace, no hex, an optional exponent, inf and NaN. */
 function isRustFloat(text: PlainText): boolean {
   const unsigned = withoutSign(text)
   if (SPECIAL_FLOATS.has(unsigned.toLowerCase())) return true
-  const [mantissa = '', exponent, ...more] = unsigned.split(/e/i)
+  const [mantissa = '', exponent, ...more] = unsigned.toLowerCase().split('e')
   return more.length === 0 && isDecimal(mantissa) && isExponent(exponent)
 }
 
@@ -77,7 +80,8 @@ export function needsKeyQuoting(key: PlainText): boolean {
 }
 
 export function formatYamlKey(key: PlainText): YamlText {
-  return needsKeyQuoting(key) ? quoted(key) : assertSingleLine(key)
+  if (needsKeyQuoting(assertKey(key))) return quoted(key)
+  return assertSingleLine(key)
 }
 
 const I64_MAX = 9223372036854775807n

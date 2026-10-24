@@ -74,6 +74,12 @@ export function assertPlainScalar(text: PlainText): PlainText {
   return assertSingleLine(text)
 }
 
+/** A property key: not empty, since `: value` is not a property. */
+export function assertKey(key: PlainText): PlainText {
+  if (key === '') throw new UnsafeFrontmatterEditError()
+  return key
+}
+
 /** Text written inside `"…"` with only `"` escaped. */
 export function assertQuotable(text: PlainText): PlainText {
   if (text.includes('\\')) throw new UnsafeFrontmatterEditError()
