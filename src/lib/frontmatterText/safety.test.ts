@@ -40,6 +40,8 @@ describe('assertSafeFrontmatterEdit', () => {
     ['a newline in a key', 'a\nb', 'x'],
     ['a backslash in a quoted key', 'a\\b c', 'x'],
     ['a CR in a plain key', 'ab\r', 'x'],
+    ['an empty key', '', 'x'],
+    ['a key that would start a new mapping line', 'a: b\nc', 'x'],
   ] as const)('refuses %s', (_name, key, value) => {
     expect(() => assertSafeFrontmatterEdit(key, value as unknown as FrontmatterTextValue))
       .toThrow(UnsafeFrontmatterEditError)

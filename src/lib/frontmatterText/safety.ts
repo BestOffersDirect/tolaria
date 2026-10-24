@@ -39,7 +39,9 @@ function isSafeQuoted(text: PlainText): boolean {
   return !breaksSingleLine(text) && !text.includes('\\')
 }
 
+/** A key is one line, and not empty: `: value` is not a property. */
 function isSafeKey(key: PlainText): boolean {
+  if (key === '') return false
   return needsKeyQuoting(key) ? isSafeQuoted(key) : !breaksSingleLine(key)
 }
 

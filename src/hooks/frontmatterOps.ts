@@ -9,7 +9,8 @@ import { normalizeNoteFormat } from '../utils/noteFormat'
 import { canonicalFrontmatterKey, isSystemMetadataKey } from '../utils/systemMetadata'
 import { normalizeNoteWidthMode } from '../utils/noteWidth'
 import { assertVaultWritable } from '../lib/offline/offlineMode'
-import { createVaultBackend } from '../lib/vaultBackend'
+import { createVaultBackend, hasRemoteVault } from '../lib/vaultBackend'
+import { editRemoteFrontmatter } from '../lib/remoteFrontmatter'
 
 type FrontmatterCommand = 'update_frontmatter' | 'delete_frontmatter_property'
 type FrontmatterKey = string
@@ -205,47 +206,27 @@ function seedMockContent(path: VaultPath, content: MarkdownContent): void {
   updateMockContent(path, content)
 }
 
-function hasRemoteBackendConfigured(): boolean {
-  return typeof window !== 'undefined' 
-    && 'TOLARIA_REMOTE_URL' in window 
-    && 'TOLARIA_REMOTE_TOKEN' in window
-}
-
 /** The browser's in-memory copy of a note, when reading it failed. */
 function windowMockContent(path: VaultPath): MarkdownContent {
   if (typeof window === 'undefined' || !window.__mockContent) return ''
   return (Reflect.get(window.__mockContent, path) as string | undefined) ?? ''
 }
 
-async function readMockContent(path: VaultPath, vaultPath?: string): Promise<MarkdownContent> {
-  if (!hasRemoteBackendConfigured()) return mockInvoke<MarkdownContent>('get_note_content', { path })
-  const backend = createVaultBackend(vaultPath ?? '')
-  return (await backend.files.read(path)).content
-}
-
-async function loadMockContent(path: VaultPath, vaultPath?: string): Promise<MarkdownContent> {
+async function loadMockContent(path: VaultPath): Promise<MarkdownContent> {
   try {
-    return await readMockContent(path, vaultPath)
+    return await mockInvoke<MarkdownContent>('get_note_content', { path })
   } catch {
     return windowMockContent(path)
   }
 }
 
-async function persistMockContent(path: VaultPath, content: MarkdownContent, vaultPath?: string): Promise<void> {
+async function persistMockContent(path: VaultPath, content: MarkdownContent): Promise<void> {
   try {
-    if (hasRemoteBackendConfigured()) {
-      const backend = createVaultBackend(vaultPath ?? '')
-      await backend.files.write(path, content)
-    } else {
-      await mockInvoke('save_note_content', { path, content })
-    }
-  } catch (error) {
+    await mockInvoke('save_note_content', { path, content })
+  } finally {
     updateMockContent(path, content)
     trackMockChange(path)
-    throw error
   }
-  updateMockContent(path, content)
-  trackMockChange(path)
 }
 
 function applyMockFrontmatterUpdate(path: VaultPath, key: FrontmatterKey, value: FrontmatterValue): MarkdownContent {
@@ -266,22 +247,34 @@ interface FrontmatterOpRequest {
   vaultPath?: string
 }
 
-async function executeMockFrontmatterOp({ op, path, key, value, vaultPath }: FrontmatterOpRequest): Promise<MarkdownContent> {
+async function executeMockFrontmatterOp({ op, path, key, value }: FrontmatterOpRequest): Promise<MarkdownContent> {
   assertVaultWritable('editing properties')
-  seedMockContent(path, await loadMockContent(path, vaultPath))
+  seedMockContent(path, await loadMockContent(path))
   let content: MarkdownContent
   if (op === 'update') {
-    if (value === undefined) throw new Error('A frontmatter update requires a value')
-    content = applyMockFrontmatterUpdate(path, key, value)
+    content = applyMockFrontmatterUpdate(path, key, requireUpdateValue(value))
   } else {
     content = applyMockFrontmatterDelete(path, key)
   }
-  await persistMockContent(path, content, vaultPath)
+  await persistMockContent(path, content)
   return content
+}
+
+function requireUpdateValue(value: FrontmatterValue | undefined): FrontmatterValue {
+  if (value === undefined) throw new Error('A frontmatter update requires a value')
+  return value
+}
+
+/** The web with a Tolaria remote: the edit goes into the note's live document or its file. */
+async function executeRemoteFrontmatterOp({ op, path, key, value, vaultPath }: FrontmatterOpRequest): Promise<MarkdownContent> {
+  assertVaultWritable('editing properties')
+  const files = createVaultBackend(vaultPath ?? '').files
+  return editRemoteFrontmatter(files, { path, key, value: op === 'delete' ? undefined : requireUpdateValue(value) })
 }
 
 async function executeFrontmatterOp(request: FrontmatterOpRequest): Promise<MarkdownContent> {
   const { op, path, key, value } = request
+  if (hasRemoteVault()) return executeRemoteFrontmatterOp(request)
   if (!isTauri()) return executeMockFrontmatterOp(request)
   return op === 'update'
     ? invokeFrontmatter('update_frontmatter', { path, key, value })
