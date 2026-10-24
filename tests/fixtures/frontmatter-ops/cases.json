@@ -1,4 +1,5 @@
 {
+  "_comment": "Desktop writer golden cases: `expected` (or `error`) is what src-tauri/src/frontmatter/ops.rs writes, checked by ops_update_tests.rs. src/lib/frontmatterText/ops.test.ts expects the same bytes, except where `web` is \"refused\": the web port refuses that edit (UnsafeFrontmatterEditError) because the desktop's bytes do not read back as written.",
   "cases": [
     {
       "name": "replaces a string",
@@ -292,7 +293,8 @@
       "key": "Hex",
       "op": "update",
       "value": "0x10",
-      "expected": "---\ntitle: T\nHex: 0x10\n---\n# Note\n\nBody text.\n"
+      "expected": "---\ntitle: T\nHex: 0x10\n---\n# Note\n\nBody text.\n",
+      "web": "refused"
     },
     {
       "name": "does not quote a leading-space number",
@@ -478,6 +480,240 @@
       "op": "update",
       "value": -1e+21,
       "expected": "---\nn: -9223372036854775808\n---\n"
+    },
+    {
+      "name": "quotes \"1.\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "1.",
+      "expected": "---\nv: \"1.\"\n---\n"
+    },
+    {
+      "name": "quotes \".5\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": ".5",
+      "expected": "---\nv: \".5\"\n---\n"
+    },
+    {
+      "name": "quotes \"+3\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "+3",
+      "expected": "---\nv: \"+3\"\n---\n"
+    },
+    {
+      "name": "quotes \"-2.5E-3\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "-2.5E-3",
+      "expected": "---\nv: \"-2.5E-3\"\n---\n"
+    },
+    {
+      "name": "quotes \"1e+5\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "1e+5",
+      "expected": "---\nv: \"1e+5\"\n---\n"
+    },
+    {
+      "name": "quotes \"INF\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "INF",
+      "expected": "---\nv: \"INF\"\n---\n"
+    },
+    {
+      "name": "quotes \"-Infinity\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "-Infinity",
+      "expected": "---\nv: \"-Infinity\"\n---\n"
+    },
+    {
+      "name": "quotes \".\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": ".",
+      "expected": "---\nv: .\n---\n"
+    },
+    {
+      "name": "quotes \"e5\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "e5",
+      "expected": "---\nv: e5\n---\n"
+    },
+    {
+      "name": "quotes \"1e\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "1e",
+      "expected": "---\nv: 1e\n---\n"
+    },
+    {
+      "name": "quotes \"1e+\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "1e+",
+      "expected": "---\nv: 1e+\n---\n"
+    },
+    {
+      "name": "quotes \"1.2.3\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "1.2.3",
+      "expected": "---\nv: 1.2.3\n---\n"
+    },
+    {
+      "name": "quotes \"1e5e5\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "1e5e5",
+      "expected": "---\nv: 1e5e5\n---\n"
+    },
+    {
+      "name": "quotes \"+\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "+",
+      "expected": "---\nv: +\n---\n"
+    },
+    {
+      "name": "quotes \"\" only if Rust reads it as a float",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "",
+      "expected": "---\nv: \n---\n"
+    },
+    {
+      "name": "leaves an alias-looking value unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "*ref",
+      "expected": "---\nv: *ref\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves an anchor-looking value unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "&anchor x",
+      "expected": "---\nv: &anchor x\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves a tag-looking value unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "!secret",
+      "expected": "---\nv: !secret\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves a leading quote unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "'open",
+      "expected": "---\nv: 'open\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves a sequence entry unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "- item",
+      "expected": "---\nv: - item\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves a tilde unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "~",
+      "expected": "---\nv: ~\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves capitalized null unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "NULL",
+      "expected": "---\nv: NULL\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves capitalized booleans unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "True",
+      "expected": "---\nv: True\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves YAML infinity unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "-.inf",
+      "expected": "---\nv: -.inf\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "leaves YAML octal unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "0o17",
+      "expected": "---\nv: 0o17\n---\n",
+      "web": "refused"
+    },
+    {
+      "name": "keeps a hyphenated word unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "-flag",
+      "expected": "---\nv: -flag\n---\n"
+    },
+    {
+      "name": "keeps an empty value unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "",
+      "expected": "---\nv: \n---\n"
+    },
+    {
+      "name": "keeps yes unquoted",
+      "content": "",
+      "key": "v",
+      "op": "update",
+      "value": "yes",
+      "expected": "---\nv: yes\n---\n"
     },
     {
       "name": "rejects frontmatter with no closing delimiter",

@@ -215,18 +215,26 @@ function windowMockContent(path: VaultPath): MarkdownContent {
 async function loadMockContent(path: VaultPath): Promise<MarkdownContent> {
   try {
     return await mockInvoke<MarkdownContent>('get_note_content', { path })
-  } catch {
+  } catch (error) {
+    void error
     return windowMockContent(path)
   }
+}
+
+/** Keeps the browser's in-memory copy, saved or not, so the edit is not lost. */
+function rememberMockContent(path: VaultPath, content: MarkdownContent): void {
+  updateMockContent(path, content)
+  trackMockChange(path)
 }
 
 async function persistMockContent(path: VaultPath, content: MarkdownContent): Promise<void> {
   try {
     await mockInvoke('save_note_content', { path, content })
-  } finally {
-    updateMockContent(path, content)
-    trackMockChange(path)
+  } catch (error) {
+    rememberMockContent(path, content)
+    throw error
   }
+  rememberMockContent(path, content)
 }
 
 function applyMockFrontmatterUpdate(path: VaultPath, key: FrontmatterKey, value: FrontmatterValue): MarkdownContent {
@@ -379,8 +387,8 @@ async function runMissingNotePathCallback(
 ): Promise<void> {
   try {
     await callbacks.onMissingNotePath?.(path, error)
-  } catch (callbackError) {
-    console.warn('Failed to handle missing frontmatter target:', callbackError)
+  } catch (err) {
+    console.warn('Failed to handle missing frontmatter target:', err)
   }
 }
 

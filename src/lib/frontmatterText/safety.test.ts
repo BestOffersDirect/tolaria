@@ -7,11 +7,12 @@ interface GoldenCase {
   key: string
   op: string
   value?: FrontmatterTextValue
+  web?: string
 }
 
 describe('assertSafeFrontmatterEdit', () => {
-  it('accepts every edit of the shared golden cases', () => {
-    for (const { key, op, value } of golden.cases as GoldenCase[]) {
+  it('accepts every edit of the shared golden cases the web does not refuse', () => {
+    for (const { key, op, value } of (golden.cases as GoldenCase[]).filter(golden => golden.web === undefined)) {
       expect(() => assertSafeFrontmatterEdit(key, op === 'delete' ? undefined : value)).not.toThrow()
     }
   })

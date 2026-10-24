@@ -1,6 +1,10 @@
+import { assertBlockLines, assertPlainScalar, assertQuotable, assertSingleLine } from './unsafeText'
+
 /**
  * YAML formatting of the desktop writer (`src-tauri/src/frontmatter/yaml.rs`), ported as is
  * so a property written on the web has the bytes the desktop would write. Keep the two in step.
+ * Escaping is the desktop's (only `"`, inside `"…"`), so text it would not write back intact
+ * is refused with `UnsafeFrontmatterEditError` (see `unsafeText.ts`).
  */
 
 /** What a property can be set to: the shape the desktop `FrontmatterValue` accepts. */
@@ -11,8 +15,32 @@ type PlainText = string
 /** Text formatted for a YAML frontmatter line. */
 type YamlText = string
 
+const SPECIAL_FLOATS = new Set(['inf', 'infinity', 'nan'])
+const DIGITS = /^\d*$/
+
+function withoutSign(text: PlainText): PlainText {
+  return text.startsWith('+') || text.startsWith('-') ? text.slice(1) : text
+}
+
+/** Digits with at most one `.`, and at least one digit: `1`, `1.`, `.5`, `1.5`. */
+function isDecimal(text: PlainText): boolean {
+  const [whole = '', fraction = '', ...more] = text.split('.')
+  return more.length === 0 && DIGITS.test(whole) && DIGITS.test(fraction) && `${whole}${fraction}` !== ''
+}
+
+function isExponent(text: PlainText | undefined): boolean {
+  if (text === undefined) return true
+  const digits = withoutSign(text)
+  return digits !== '' && DIGITS.test(digits)
+}
+
 /** Rust's `str::parse::<f64>` grammar: no whitespace, no hex, an optional exponent, inf and NaN. */
-const RUST_FLOAT = /^[+-]?(?:inf|infinity|nan|(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)$/i
+function isRustFloat(text: PlainText): boolean {
+  const unsigned = withoutSign(text)
+  if (SPECIAL_FLOATS.has(unsigned.toLowerCase())) return true
+  const [mantissa = '', exponent, ...more] = unsigned.split(/e/i)
+  return more.length === 0 && isDecimal(mantissa) && isExponent(exponent)
+}
 
 const YAML_KEYWORDS = new Set(['true', 'false', 'null'])
 
@@ -20,7 +48,7 @@ const QUOTING_RULES: readonly ((text: PlainText) => boolean)[] = [
   text => text.includes(':') || text.includes('#'),
   text => text.startsWith('[') || text.startsWith('{'),
   text => YAML_KEYWORDS.has(text),
-  text => RUST_FLOAT.test(text),
+  isRustFloat,
 ]
 
 /** True when the desktop writes this single-line string value in double quotes. */
@@ -29,7 +57,7 @@ export function needsQuoting(text: PlainText): boolean {
 }
 
 function quoted(text: PlainText): YamlText {
-  return `"${text.replaceAll('"', '\\"')}"`
+  return `"${assertQuotable(text).replaceAll('"', '\\"')}"`
 }
 
 /** Rust's `str::lines`: split on `\n`, drop one trailing `\r` per line and a final empty line. */
@@ -40,7 +68,7 @@ export function rustLines(text: PlainText): PlainText[] {
 }
 
 function blockScalar(text: PlainText): YamlText {
-  return `|\n${rustLines(text).map(line => (line === '' ? '' : `  ${line}`)).join('\n')}`
+  return `|\n${assertBlockLines(rustLines(text)).map(line => (line === '' ? '' : `  ${line}`)).join('\n')}`
 }
 
 /** True when the desktop writes this key in double quotes. */
@@ -49,7 +77,7 @@ export function needsKeyQuoting(key: PlainText): boolean {
 }
 
 export function formatYamlKey(key: PlainText): YamlText {
-  return needsKeyQuoting(key) ? quoted(key) : key
+  return needsKeyQuoting(key) ? quoted(key) : assertSingleLine(key)
 }
 
 const I64_MAX = 9223372036854775807n
@@ -65,10 +93,11 @@ function integerText(value: number): YamlText {
 /** Rust's `{}` for a fractional f64: the shortest round-trip digits, never in exponent form. */
 function fractionText(value: number): YamlText {
   const text = String(value)
-  const exponent = /^(-?)(\d)(?:\.(\d+))?e-(\d+)$/.exec(text)
-  if (!exponent) return text
-  const [, sign, lead, rest = '', power] = exponent
-  return `${sign}0.${'0'.repeat(Number(power) - 1)}${lead}${rest}`
+  const [mantissa = '', power] = text.split('e-')
+  if (power === undefined) return text
+  const sign = mantissa.startsWith('-') ? '-' : ''
+  const digits = withoutSign(mantissa).replace('.', '')
+  return `${sign}0.${'0'.repeat(Number(power) - 1)}${digits}`
 }
 
 /** Rust's `{}` for NaN and the infinities. */
@@ -84,7 +113,7 @@ function formatYamlNumber(value: number): YamlText {
 
 function formatYamlString(text: PlainText): YamlText {
   if (text.includes('\n')) return blockScalar(text)
-  return needsQuoting(text) ? quoted(text) : text
+  return needsQuoting(text) ? quoted(text) : assertPlainScalar(text)
 }
 
 function formatYamlList(items: readonly PlainText[]): YamlText {

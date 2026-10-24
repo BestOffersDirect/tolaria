@@ -12,6 +12,8 @@ interface GoldenCase {
   value?: FrontmatterTextValue
   expected?: string
   error?: string
+  /** `refused`: the web refuses an edit whose desktop bytes do not read back as written. */
+  web?: string
 }
 
 const cases = golden.cases as GoldenCase[]
@@ -25,8 +27,12 @@ describe('updateFrontmatterContent matches the desktop writer byte for byte', ()
     expect(cases.length).toBeGreaterThan(50)
   })
 
-  it.each(cases.filter(golden => golden.expected !== undefined))('$name', golden => {
+  it.each(cases.filter(golden => golden.expected !== undefined && golden.web === undefined))('$name', golden => {
     expect(run(golden)).toBe(golden.expected)
+  })
+
+  it.each(cases.filter(golden => golden.web === 'refused'))('refuses on the web: $name', golden => {
+    expect(() => run(golden)).toThrow(UnsafeFrontmatterEditError)
   })
 
   it.each(cases.filter(golden => golden.error !== undefined))('$name', golden => {
