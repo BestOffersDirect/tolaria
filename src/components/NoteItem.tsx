@@ -627,44 +627,19 @@ function NoteItemContent(options: {
   typeEntryMap: Record<string, VaultEntry>
   onClickNote: NoteItemProps['onClickNote']
 }) {
-  const {
-    entry,
-    isBinary,
-    isUnavailableBinary,
-    isSelected,
-    noteStatus,
-    changeStatus,
-    typeColor,
-    displayProps,
-    allEntries,
-    typeEntryMap,
-    onClickNote,
-  } = options
+  const { changeStatus, ...standard } = options
   if (changeStatus) {
     return (
       <ChangeNoteContent
-        entry={entry}
+        entry={standard.entry}
         changeStatus={changeStatus}
-        isSelected={isSelected}
+        isSelected={standard.isSelected}
         isDeletedChange={changeStatus === 'deleted'}
       />
     )
   }
 
-  return (
-    <StandardNoteContent
-      entry={entry}
-      isBinary={isBinary}
-      isUnavailableBinary={isUnavailableBinary}
-      noteStatus={noteStatus}
-      isSelected={isSelected}
-      typeColor={typeColor}
-      displayProps={displayProps}
-      allEntries={allEntries}
-      typeEntryMap={typeEntryMap}
-      onClickNote={onClickNote}
-    />
-  )
+  return <StandardNoteContent {...standard} />
 }
 
 export function NoteItem(options: NoteItemProps) {

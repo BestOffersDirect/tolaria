@@ -118,66 +118,94 @@ async function showNoteList(page: Page): Promise<void> {
 	if (await back.isVisible()) await back.click();
 }
 
-test("a desktop push mid-edit keeps the web edits and marks the desktop version as a conflict copy", async ({
-	page,
-	request,
-}, testInfo) => {
-	const note = noteFor(testInfo.project.name);
+async function createNote(
+	request: APIRequestContext,
+	note: ConflictNote,
+): Promise<void> {
 	const created = await request.put(`/v1/files/${note.path}`, {
 		headers: { ...AUTH, "if-none-match": "*" },
 		data: markdown(note),
 	});
 	expect(created.status()).toBe(201);
 	await expect.poll(() => remoteHas(note.path), { timeout: 15_000 }).toBe(true);
+}
+
+/** The desktop pushes while the web is about to type into the same paragraph. */
+async function typeWhileTheDesktopPushes(
+	page: Page,
+	note: ConflictNote,
+	clone: string,
+): Promise<void> {
+	await configureRemoteVault(page);
+	await page.goto(`/?note=${note.path}`, { waitUntil: "networkidle" });
+	const second = editor(page)
+		.locator(".bn-inline-content", { hasText: SECOND })
+		.first();
+	await expect(second).toBeVisible({ timeout: 15_000 });
+	// The server only sees the push when it pulls before writing the web edit.
+	git(clone, ["push", "-q", "origin", "HEAD:main"]);
+	await second.click();
+	await page.keyboard.press("End");
+	await page.keyboard.type(note.webText);
+}
+
+/** The note keeps the web edits and the copy holds the desktop's version. Returns the copy. */
+async function expectNothingLost(
+	page: Page,
+	request: APIRequestContext,
+	note: ConflictNote,
+): Promise<string> {
+	const copy =
+		(await serverPaths(request)).find((path) =>
+			path.startsWith(`conflicts/${note.id} (conflict `),
+		) ?? "";
+	expect(copy).not.toBe("");
+	await expect
+		.poll(async () => (await serverFile(request, note.path)).text, {
+			timeout: 20_000,
+		})
+		.toBe(markdown(note, `${SECOND}${note.webText}`));
+	expect((await serverFile(request, copy)).text).toBe(
+		markdown(note, note.desktopLine),
+	);
+	await expect(editor(page)).toContainText(`${SECOND}${note.webText}`);
+	await expect(editor(page)).not.toContainText(note.desktopLine);
+	return copy;
+}
+
+async function expectCopyMarkedInNoteList(
+	page: Page,
+	note: ConflictNote,
+): Promise<void> {
+	await showNoteList(page);
+	const copyRow = page
+		.getByTestId("note-list-container")
+		.getByTestId("note-title-row")
+		.filter({ has: page.getByTestId("conflict-copy-badge") })
+		.filter({ hasText: note.id });
+	await expect(copyRow).toHaveCount(1, { timeout: 15_000 });
+	await expect(copyRow).toContainText("Conflict copy");
+}
+
+test("a desktop push mid-edit keeps the web edits and marks the desktop version as a conflict copy", async ({
+	page,
+	request,
+}, testInfo) => {
+	const note = noteFor(testInfo.project.name);
+	await createNote(request, note);
 	const clone = desktopCommit(note);
 	let copy = "";
 	try {
-		await configureRemoteVault(page);
-		await page.goto(`/?note=${note.path}`, { waitUntil: "networkidle" });
-		const second = editor(page)
-			.locator(".bn-inline-content", { hasText: SECOND })
-			.first();
-		await expect(second).toBeVisible({ timeout: 15_000 });
-
-		// The desktop pushes while the web is about to type into the same paragraph: the
-		// server only sees the push when it pulls before writing the web edit.
-		git(clone, ["push", "-q", "origin", "HEAD:main"]);
-		await second.click();
-		await page.keyboard.press("End");
-		await page.keyboard.type(note.webText);
+		await typeWhileTheDesktopPushes(page, note, clone);
 
 		const notice = page.getByTestId("conflict-copy-notice");
 		await expect(notice).toBeVisible({ timeout: 20_000 });
 		await expect(notice).toContainText(`${note.id} (conflict `);
-
-		copy =
-			(await serverPaths(request)).find((path) =>
-				path.startsWith(`conflicts/${note.id} (conflict `),
-			) ?? "";
-		expect(copy).not.toBe("");
-		// Nothing is lost: the note keeps the web edits, the copy holds the desktop's version.
-		await expect
-			.poll(async () => (await serverFile(request, note.path)).text, {
-				timeout: 20_000,
-			})
-			.toBe(markdown(note, `${SECOND}${note.webText}`));
-		expect((await serverFile(request, copy)).text).toBe(
-			markdown(note, note.desktopLine),
-		);
-		await expect(editor(page)).toContainText(`${SECOND}${note.webText}`);
-		await expect(editor(page)).not.toContainText(note.desktopLine);
+		copy = await expectNothingLost(page, request, note);
 
 		await page.getByTestId("conflict-copy-notice-dismiss").click();
 		await expect(notice).toBeHidden();
-		await showNoteList(page);
-		const rows = page
-			.getByTestId("note-list-container")
-			.getByTestId("note-title-row");
-		const copyRow = rows
-			.filter({ has: page.getByTestId("conflict-copy-badge") })
-			.filter({ hasText: note.id });
-		await expect(copyRow).toHaveCount(1, { timeout: 15_000 });
-		await expect(copyRow).toContainText("Conflict copy");
+		await expectCopyMarkedInNoteList(page, note);
 	} finally {
 		rmSync(clone, { recursive: true, force: true });
 		await page.close();
