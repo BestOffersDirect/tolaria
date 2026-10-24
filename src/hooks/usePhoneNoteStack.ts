@@ -1,23 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { VaultEntry } from '../types'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { WebRoute } from '../utils/webRoute'
+import { publishPhoneNoteStack } from './phoneNoteStackStore'
 import { useKeyboardAwareViewport } from './useKeyboardAwareViewport'
 import { usePhoneLayout } from './usePhoneLayout'
 
 /** Set on a history entry pushed while leaving the note list (useWebRouting). */
 export const BACK_TO_NOTE_LIST_STATE_KEY = 'tolariaBackToNoteList'
+/** On `<html>` while the phone layout is active; App.css lays the panes out from it. */
+export const PHONE_PANE_ATTRIBUTE = 'data-phone-pane'
 
 export type PhonePane = 'list' | 'note'
-type NoteOpener = (entry: VaultEntry) => unknown
 
 /** The phone web layout (TOL-193): the note list, then the note, one pane at a time. */
 export interface PhoneNoteStack {
   active: boolean
   pane: PhonePane
-  /** Wraps the list's opener so a tapped note is shown, the already open one included. */
-  showingNote: (open: NoteOpener) => NoteOpener
   /** The in-app back control. */
   backToList: () => void
+  showNote: () => void
 }
 
 /** What useWebRouting needs: the URL names no note while the phone shows the list. */
@@ -59,23 +59,27 @@ function useBlurHiddenEditor(listShown: boolean): void {
   }, [listShown])
 }
 
-/**
- * One stable wrapper per opener, so the list's props keep their identity across renders.
- * Off the phone layout the opener is passed through untouched.
- */
-function useShowingNote(active: boolean, showNote: () => void): PhoneNoteStack['showingNote'] {
-  const wrappersRef = useRef(new WeakMap<NoteOpener, NoteOpener>())
-  return useCallback((open: NoteOpener) => {
-    if (!active) return open
-    const cached = wrappersRef.current.get(open)
-    if (cached) return cached
-    const wrapped: NoteOpener = async (entry) => {
-      await open(entry)
-      showNote()
-    }
-    wrappersRef.current.set(open, wrapped)
-    return wrapped
-  }, [active, showNote])
+/** Marks the page before it paints, so the phone never shows the three panes first. */
+function usePhonePaneAttribute(pane: PhonePane | null): void {
+  useLayoutEffect(() => {
+    if (!pane) return
+    const root = document.documentElement
+    root.setAttribute(PHONE_PANE_ATTRIBUTE, pane)
+    return () => { root.removeAttribute(PHONE_PANE_ATTRIBUTE) }
+  }, [pane])
+}
+
+function usePublishedControls(stack: PhoneNoteStack): void {
+  const { active, backToList, showNote } = stack
+  useLayoutEffect(() => {
+    if (!active) return
+    publishPhoneNoteStack({ active, backToList, showNote })
+    return () => { publishPhoneNoteStack(null) }
+  }, [active, backToList, showNote])
+}
+
+function noteListPaneFor(active: boolean, shown: boolean, show: (shown: boolean) => void): NoteListPane | undefined {
+  return active ? { shown, show } : undefined
 }
 
 /**
@@ -90,19 +94,18 @@ export function usePhoneNoteStack({ activeNotePath, enabled, initialRoute, ready
   const active = usePhoneLayout(enabled)
   const [listShown, setListShown] = useState(() => !initialRoute?.note)
   const showNote = useCallback(() => { setListShown(false) }, [])
-  useShowOpenedNote(activeNotePath, enabled && ready, showNote)
-  useKeyboardAwareViewport(active)
-
-  const showingNote = useShowingNote(active, showNote)
   const backToList = useCallback(() => {
     if (enteredFromNoteList()) window.history.back()
     else setListShown(true)
   }, [])
+  useShowOpenedNote(activeNotePath, enabled && ready, showNote)
+  useKeyboardAwareViewport(active)
 
   const shown = listShown || !activeNotePath
+  const pane: PhonePane = shown ? 'list' : 'note'
+  const stack: PhoneNoteStack = { active, pane, backToList, showNote }
   useBlurHiddenEditor(active && shown)
-  return {
-    noteListPane: active ? { shown, show: setListShown } : undefined,
-    stack: { active, pane: shown ? 'list' : 'note', showingNote, backToList },
-  }
+  usePhonePaneAttribute(active ? pane : null)
+  usePublishedControls(stack)
+  return { noteListPane: noteListPaneFor(active, shown, setListShown), stack }
 }

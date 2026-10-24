@@ -69,7 +69,7 @@ body.mac-chrome.mac-chrome-fullscreen {
 }
 
 /* Phone web layout (TOL-193): one pane at a time, inside the safe area and above the keyboard. */
-.app-shell[data-phone-pane] {
+html[data-phone-pane] .app-shell {
   position: fixed;
   top: var(--tolaria-visual-viewport-top, 0);
   left: 0;
@@ -78,37 +78,37 @@ body.mac-chrome.mac-chrome-fullscreen {
   box-shadow: none;
 }
 
-.app-shell[data-phone-pane] .app {
+html[data-phone-pane] .app-shell .app {
   position: relative;
 }
 
-.app-shell[data-phone-pane] .app__sidebar,
-.app-shell[data-phone-pane] .app > .cursor-col-resize {
+html[data-phone-pane] .app-shell .app__sidebar,
+html[data-phone-pane] .app-shell .app > .cursor-col-resize {
   display: none;
 }
 
 /* The pane behind stays laid out: the list keeps its scroll, the editor is ready for a tap. */
-.app-shell[data-phone-pane="list"] .app__editor,
-.app-shell[data-phone-pane="note"] .app__note-list {
+html[data-phone-pane="list"] .app-shell .app__editor,
+html[data-phone-pane="note"] .app-shell .app__note-list {
   position: absolute;
   inset: 0;
   visibility: hidden;
 }
 
-.app-shell[data-phone-pane] .app__note-list {
+html[data-phone-pane] .app-shell .app__note-list {
   flex: 1 1 0;
   min-width: 0;
 }
 
-.app-shell[data-phone-pane] .app__note-list > * {
+html[data-phone-pane] .app-shell .app__note-list > * {
   border-left: none;
 }
 
-.app-shell[data-phone-pane] .app__editor {
+html[data-phone-pane] .app-shell .app__editor {
   min-width: 0;
 }
 
-.app-shell[data-phone-pane] .app__editor > .app__phone-back-bar {
+html[data-phone-pane] .app-shell .app__editor > .app__phone-back-bar {
   flex: 0 0 auto;
   display: flex;
   align-items: center;

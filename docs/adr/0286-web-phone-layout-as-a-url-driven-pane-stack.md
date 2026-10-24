@@ -14,7 +14,7 @@ At phone width the web build showed the desktop's three panes side by side: the 
 
 **At `(max-width: 640px)` in the web build, the shell shows one pane, the note list or the note. Which one is part of the route: while the list is shown the URL names no note. The panes stay mounted and are switched by CSS.**
 
-- **Scope.** `usePhoneNoteStack`, called from `useActiveNoteLocation`, is active only when web routing is (web build, main window) and `usePhoneLayout` matches. App marks `.app-shell` with `data-phone-pane="list|note"`; every phone rule in `App.css` keys on that attribute, so no other layout sees it.
+- **Scope.** `usePhoneNoteStack`, called from `useActiveNoteLocation`, is active only when web routing is (web build, main window) and `usePhoneLayout` matches. It marks `<html>` with `data-phone-pane="list|note"` in a layout effect, before the first paint, and every phone rule in `App.css` keys on that attribute, so no other layout sees it. The panes it does not render read it from `phoneNoteStackStore` (`useSyncExternalStore`): `LazyEditor` renders the back bar above the editor and `NoteList` wraps its opener so a tapped note is shown, the open one included. Off the phone the store is inactive, the bar renders nothing and the opener is passed through unchanged; `App.tsx` does not change.
 - **Route.** `useWebRouting` takes an optional `noteListPane`. While it is shown, the routed note is `null`. Opening a note from the list pushes the note's URL; a popped URL without a note shows the list instead of keeping the note (wider layouts keep it, as before). Each pushed entry records in `history.state` whether the entry before it named no note, so the in-app back control calls `history.back()` when that is the list and only otherwise shows the list itself (a shared note URL has no list beneath it).
 - **Startup.** The list comes first unless the opening URL names a note. The restored last note opens behind the list as on desktop, so tapping it is instant, and the cached-list paint path is unchanged.
 - **Panes.** The hidden pane is `visibility: hidden` and absolutely positioned rather than unmounted or `display: none`: the list keeps its scroll position and the editor stays laid out and ready to take focus. The sidebar and resize handles are hidden on the phone.
@@ -31,5 +31,6 @@ At phone width the web build showed the desktop's three panes side by side: the 
 
 - Browser back and the in-app back control return to the list; forward reopens the note.
 - On the phone, back from a note opened through a wikilink goes to that earlier note in the browser, while the in-app control goes to the list.
+- Deleting the note on screen opens the next one, as on the desktop. A rename moves the open note to a new path the same way a delete does, so the phone does not try to tell them apart.
 - The sidebar (types, saved views, favorites) is not reachable on the phone yet; a later card adds it as a pane before the list.
 - iPad layouts (TOL-194) keep the desktop panes until their own card.

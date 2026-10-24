@@ -5,7 +5,8 @@ import { APP_STORAGE_KEYS } from '../constants/appStorage'
 import { stubPhoneMedia } from '../test-utils/phoneLayout'
 import type { SidebarSelection, VaultEntry } from '../types'
 import { useActiveNoteLocation } from './useActiveNoteLocation'
-import { BACK_TO_NOTE_LIST_STATE_KEY } from './usePhoneNoteStack'
+import { usePhoneNoteOpener } from './phoneNoteStackStore'
+import { BACK_TO_NOTE_LIST_STATE_KEY, PHONE_PANE_ATTRIBUTE } from './usePhoneNoteStack'
 
 const VAULT_PATH = '/Users/mock/demo-vault-v2'
 const VAULTS = [{ label: 'demo-vault-v2', path: VAULT_PATH }]
@@ -16,11 +17,12 @@ const INBOX: SidebarSelection = { kind: 'filter', filter: 'inbox' }
 function useHarness() {
   const [activeNotePath, setActiveNotePath] = useState<string | null>(null)
   const [selection, setSelection] = useState<SidebarSelection>(INBOX)
+  const [entries, setEntries] = useState(ENTRIES)
   const [openNote] = useState(() => vi.fn(async (entry: VaultEntry) => { setActiveNotePath(entry.path) }))
   const stack = useActiveNoteLocation({
     activeNotePath,
     enabled: true,
-    entries: ENTRIES,
+    entries,
     isVaultLoading: false,
     openNote,
     selection,
@@ -29,7 +31,8 @@ function useHarness() {
     vaults: VAULTS,
     views: [],
   })
-  return { activeNotePath, openNote, stack }
+  const tapNote = usePhoneNoteOpener(openNote)
+  return { activeNotePath, openNote, setEntries, stack, tapNote }
 }
 
 type Harness = ReturnType<typeof useHarness>
@@ -44,7 +47,7 @@ function noteParam(): string | null {
 }
 
 async function tapInList(current: Harness, entry: VaultEntry) {
-  await act(async () => { await current.stack.showingNote(current.openNote)(entry) })
+  await act(async () => { await current.tapNote(entry) })
 }
 
 function popTo(url: string, state: unknown = null) {
@@ -74,6 +77,7 @@ describe('usePhoneNoteStack', () => {
 
     await waitFor(() => { expect(result.current.activeNotePath).toBe('welcome.md') })
     expect(result.current.stack).toMatchObject({ active: true, pane: 'list' })
+    expect(document.documentElement.getAttribute(PHONE_PANE_ATTRIBUTE)).toBe('list')
     await waitFor(() => { expect(window.location.search).toBe('?vault=demo-vault-v2') })
   })
 
@@ -86,6 +90,7 @@ describe('usePhoneNoteStack', () => {
     await tapInList(result.current, WELCOME)
 
     expect(result.current.stack.pane).toBe('note')
+    expect(document.documentElement.getAttribute(PHONE_PANE_ATTRIBUTE)).toBe('note')
     await waitFor(() => { expect(noteParam()).toBe('welcome.md') })
     expect(pushState).toHaveBeenCalledWith(expect.objectContaining({ [BACK_TO_NOTE_LIST_STATE_KEY]: true }), '', expect.any(String))
   })
@@ -139,6 +144,17 @@ describe('usePhoneNoteStack', () => {
     expect(result.current.stack.pane).toBe('note')
   })
 
+  it('keeps a renamed note on screen', async () => {
+    const { result } = renderAt('/')
+    await waitFor(() => { expect(window.location.search).toBe('?vault=demo-vault-v2') })
+    await tapInList(result.current, ADA)
+
+    act(() => { result.current.setEntries([WELCOME, { path: 'people/ada-lovelace.md' } as VaultEntry]) })
+    await act(async () => { await result.current.openNote({ path: 'people/ada-lovelace.md' } as VaultEntry) })
+
+    expect(result.current.stack.pane).toBe('note')
+  })
+
   it('lets go of editor focus on the way back to the list', async () => {
     const editor = document.createElement('div')
     editor.className = 'app__editor'
@@ -155,19 +171,22 @@ describe('usePhoneNoteStack', () => {
     editor.remove()
   })
 
-  it('passes the opener through untouched off the phone layout', async () => {
+  it('passes the opener through untouched off the phone layout, and marks nothing', () => {
     stubPhoneMedia(false)
-    const { result } = renderAt('/')
-    const opener = vi.fn()
+    const { result, unmount } = renderAt('/')
 
     expect(result.current.stack.active).toBe(false)
-    expect(result.current.stack.showingNote(opener)).toBe(opener)
+    expect(result.current.tapNote).toBe(result.current.openNote)
+    expect(document.documentElement.hasAttribute(PHONE_PANE_ATTRIBUTE)).toBe(false)
+    unmount()
   })
 
-  it('keeps one wrapper per opener on the phone layout', () => {
-    const { result } = renderAt('/')
-    const opener = vi.fn()
+  it('clears the page mark when the phone layout goes away', () => {
+    const { unmount } = renderAt('/')
+    expect(document.documentElement.hasAttribute(PHONE_PANE_ATTRIBUTE)).toBe(true)
 
-    expect(result.current.stack.showingNote(opener)).toBe(result.current.stack.showingNote(opener))
+    unmount()
+
+    expect(document.documentElement.hasAttribute(PHONE_PANE_ATTRIBUTE)).toBe(false)
   })
 })
