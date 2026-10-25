@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
 import { invoke } from '@tauri-apps/api/core'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as frontmatterText from '../lib/frontmatterText'
+import { GITIGNORED_VISIBILITY_APPLIED_EVENT } from '../lib/gitignoredVisibilityEvents'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry } from '../types'
-import { RAPID_CREATE_NOTE_SETTLE_MS } from './useNoteCreation'
-import { useNoteActions } from './useNoteActions'
-import type { NoteActionsConfig } from './useNoteActions'
-import { GITIGNORED_VISIBILITY_APPLIED_EVENT } from '../lib/gitignoredVisibilityEvents'
 import { clearNoteContentCache, getCachedNoteContentEntry } from './noteContentCache'
-import * as frontmatterText from '../lib/frontmatterText'
+import type { NoteActionsConfig } from './useNoteActions'
+import { useNoteActions } from './useNoteActions'
+import { RAPID_CREATE_NOTE_SETTLE_MS } from './useNoteCreation'
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 vi.mock('../mock-tauri', () => ({

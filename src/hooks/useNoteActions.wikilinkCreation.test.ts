@@ -1,10 +1,10 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { VaultOption } from '../components/status-bar/types'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry, WorkspaceIdentity } from '../types'
-import type { VaultOption } from '../components/status-bar/types'
 import { clearNoteContentCache } from './noteContentCache'
-import { useNoteActions, type NoteActionsConfig } from './useNoteActions'
+import { type NoteActionsConfig, useNoteActions } from './useNoteActions'
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 vi.mock('../mock-tauri', () => ({
