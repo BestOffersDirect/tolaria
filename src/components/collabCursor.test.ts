@@ -44,10 +44,13 @@ describe("renderCollabCursor", () => {
 		).toBe("rgb(107, 114, 128)");
 	});
 
-	it("shows a name as text, never as markup", () => {
-		const cursor = renderCollabCursor({ name: "<img src=x>", color: 7 });
+	it("puts the name in a text node, never parsed as markup", () => {
+		const name = renderCollabCursor({
+			name: "Ada",
+			color: "#1971c2",
+		}).querySelector(".collab-cursor__name");
 
-		expect(cursor.querySelector("img")).toBeNull();
-		expect(cursor.textContent).toContain("<img src=x>");
+		expect(name?.childNodes).toHaveLength(1);
+		expect(name?.firstChild?.nodeType).toBe(Node.TEXT_NODE);
 	});
 });
