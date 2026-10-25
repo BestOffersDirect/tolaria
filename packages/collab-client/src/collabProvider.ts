@@ -42,12 +42,18 @@ interface AwarenessChange {
   removed: number[]
 }
 
+/** Ends something that was started. */
+type Stop = () => void
+
 const OPEN = 1
 const DEFAULT_RETRY_MS = 500
 const DEFAULT_MAX_RETRY_MS = 15_000
 
+/** A binary frame's bytes, or null for a frame that is not binary. */
+type Frame = Uint8Array | null
+
 /** The bytes of a binary frame; null for anything else (a text frame carries nothing of ours). */
-function asBytes(data: unknown): Uint8Array | null {
+function asBytes(data: unknown): Frame {
   if (data instanceof ArrayBuffer) return new Uint8Array(data)
   return data instanceof Uint8Array ? data : null
 }
@@ -62,7 +68,7 @@ export class CollabProvider {
   private attempts = 0
   private retry: ReturnType<typeof setTimeout> | null = null
   private readonly outgoingAwareness: AwarenessThrottle
-  private readonly stopPresenceRenewal: () => void
+  private readonly stopPresenceRenewal: Stop
 
   constructor(options: ProviderOptions) {
     this.options = options

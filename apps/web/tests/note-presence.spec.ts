@@ -107,88 +107,131 @@ async function shot(page: Page, testInfo: TestInfo, name: string) {
 	});
 }
 
-test("two windows on a note see each other, and a window that leaves is gone within 5 s", async ({
-	browser,
-	request,
-}, testInfo) => {
+interface Scene {
+	folder: string;
+	shared: SeededNote;
+	elsewhere: SeededNote;
+	hostContext: BrowserContext;
+	guestContext: BrowserContext;
+	host: Page;
+	guest: Page;
+	testInfo: TestInfo;
+}
+
+function seededNotes(testInfo: TestInfo) {
 	const stamp = `${testInfo.project.name}-${Date.now()}`;
 	const folder = `presence-${stamp}`;
-	const shared: SeededNote = {
-		path: `${folder}/shared.md`,
-		title: `Shared ${stamp}`,
+	return {
+		folder,
+		shared: { path: `${folder}/shared.md`, title: `Shared ${stamp}` },
+		elsewhere: { path: `${folder}/elsewhere.md`, title: `Elsewhere ${stamp}` },
 	};
-	const elsewhere: SeededNote = {
-		path: `${folder}/elsewhere.md`,
-		title: `Elsewhere ${stamp}`,
-	};
+}
+
+async function seed(
+	request: APIRequestContext,
+	{ folder, shared, elsewhere }: ReturnType<typeof seededNotes>,
+): Promise<void> {
 	await createNote(
 		request,
 		shared.path,
 		`# ${shared.title}\n\n${LINE}\n\nSee [[${folder}/elsewhere]].\n`,
 	);
 	await createNote(request, elsewhere.path, `# ${elsewhere.title}\n\nBody.\n`);
+}
+
+/** Each sees the other's avatar, named after its browser and device, and listed on a tap. */
+async function expectEachSeesTheOther({ host, guest, testInfo }: Scene) {
+	const guestName = await nameSeenBy(host);
+	const hostName = await nameSeenBy(guest);
+	expect([guestName, hostName]).not.toContain("");
+	// A phone has no hover: the names are a tap away.
+	await host.getByTestId("note-presence").click();
+	await expect(host.getByTestId("note-presence-list")).toContainText(guestName);
+	await shot(host, testInfo, "presence-list");
+	await host.keyboard.press("Escape");
+	return { guestName, hostName };
+}
+
+/** A caret placed by one shows in the other with its name, in a phone-sized label. */
+async function expectNamedCarets(
+	{ host, guest, testInfo }: Scene,
+	{ guestName, hostName }: { guestName: string; hostName: string },
+) {
+	await placeCaret(guest);
+	await expect(remoteCursors(host)).toHaveCount(1, { timeout: JOIN_MS });
+	await expect(remoteCursors(host)).toContainText(guestName);
+	await placeCaret(host);
+	await expect(remoteCursors(guest)).toContainText(hostName, {
+		timeout: JOIN_MS,
+	});
+	await shot(host, testInfo, "presence-cursor");
+	const label = await remoteCursors(host)
+		.locator(".bn-collaboration-cursor__label")
+		.boundingBox();
+	expect(label?.width ?? 0).toBeLessThanOrEqual(170);
+}
+
+/** The guest follows a link to another note. */
+async function expectSwitchClears({ host, guest, folder, elsewhere }: Scene) {
+	await guest
+		.locator(`.bn-editor .wikilink[data-target="${folder}/elsewhere"]`)
+		.focus();
+	await guest.keyboard.press("Enter");
+	await expectNoteShown(guest, elsewhere.title);
+	await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
+	await expect(remoteCursors(host)).toHaveCount(0);
+}
+
+/** The guest goes offline, then comes back. */
+async function expectOfflineClears({
+	host,
+	guest,
+	guestContext,
+	shared,
+}: Scene) {
+	await openNote(guest, shared);
+	await expect(avatars(host)).toHaveCount(1, { timeout: JOIN_MS });
+	await guestContext.setOffline(true);
+	await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
+	await guestContext.setOffline(false);
+	await expect(avatars(host)).toHaveCount(1, { timeout: JOIN_MS });
+}
+
+async function expectCloseClears({ host, guest }: Scene) {
+	await guest.close();
+	await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
+}
+
+test("two windows on a note see each other, and a window that leaves is gone within 5 s", async ({
+	browser,
+	request,
+}, testInfo) => {
+	const notes = seededNotes(testInfo);
+	await seed(request, notes);
 	const hostContext = await remoteContext(browser, testInfo);
 	const guestContext = await remoteContext(browser, testInfo);
-
 	try {
-		const host = await hostContext.newPage();
-		const guest = await guestContext.newPage();
-		await openNote(host, shared);
-		await openNote(guest, shared);
+		const scene: Scene = {
+			...notes,
+			hostContext,
+			guestContext,
+			host: await hostContext.newPage(),
+			guest: await guestContext.newPage(),
+			testInfo,
+		};
+		await openNote(scene.host, notes.shared);
+		await openNote(scene.guest, notes.shared);
 
-		// Each sees the other's avatar, named after its browser and device.
-		const guestName = await nameSeenBy(host);
-		const hostName = await nameSeenBy(guest);
-		expect(guestName).not.toBe("");
-		expect(hostName).not.toBe("");
-
-		// The others are listed by name on a tap, as a phone has no hover.
-		await host.getByTestId("note-presence").click();
-		await expect(host.getByTestId("note-presence-list")).toContainText(
-			guestName,
-		);
-		await shot(host, testInfo, "presence-list");
-		await host.keyboard.press("Escape");
-
-		// A caret placed by one shows in the other with its name.
-		await placeCaret(guest);
-		await expect(remoteCursors(host)).toHaveCount(1, { timeout: JOIN_MS });
-		await expect(remoteCursors(host)).toContainText(guestName);
-		await placeCaret(host);
-		await expect(remoteCursors(guest)).toContainText(hostName, {
-			timeout: JOIN_MS,
-		});
-		await shot(host, testInfo, "presence-cursor");
-		// The label stays phone-sized, so it never runs across the line it sits above.
-		const label = await remoteCursors(host)
-			.locator(".bn-collaboration-cursor__label")
-			.boundingBox();
-		expect(label?.width ?? 0).toBeLessThanOrEqual(170);
-
-		// Switching note: the guest follows a link to another note.
-		await guest
-			.locator(`.bn-editor .wikilink[data-target="${folder}/elsewhere"]`)
-			.focus();
-		await guest.keyboard.press("Enter");
-		await expectNoteShown(guest, elsewhere.title);
-		await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
-		await expect(remoteCursors(host)).toHaveCount(0);
-
-		// Going offline.
-		await openNote(guest, shared);
-		await expect(avatars(host)).toHaveCount(1, { timeout: JOIN_MS });
-		await guestContext.setOffline(true);
-		await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
-
-		// Back online, the guest is there again; then it closes its tab.
-		await guestContext.setOffline(false);
-		await expect(avatars(host)).toHaveCount(1, { timeout: JOIN_MS });
-		await guest.close();
-		await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
+		const names = await expectEachSeesTheOther(scene);
+		await expectNamedCarets(scene, names);
+		await expectSwitchClears(scene);
+		await expectOfflineClears(scene);
+		await expectCloseClears(scene);
 	} finally {
 		await hostContext.close();
 		await guestContext.close();
-		await deleteNote(request, shared.path);
-		await deleteNote(request, elsewhere.path);
+		await deleteNote(request, notes.shared.path);
+		await deleteNote(request, notes.elsewhere.path);
 	}
 });

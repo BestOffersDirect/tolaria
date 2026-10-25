@@ -47,7 +47,7 @@ export function renderCollabCursor(user: CursorUser): HTMLElement {
 	const caret = element("span", "bn-collaboration-cursor__caret");
 	caret.setAttribute("contenteditable", "false");
 	// A peer's colour is used only when it is a plain `#rrggbb`.
-	const color = safeColor(user.color, FALLBACK_COLOR);
+	const color = safeColor(user.color) ?? FALLBACK_COLOR;
 	caret.style.backgroundColor = color;
 	caret.append(nameLabel(name, color));
 	base.append(WORD_JOINER, caret, WORD_JOINER);

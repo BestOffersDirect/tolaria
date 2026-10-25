@@ -44,7 +44,7 @@ describe('presence', () => {
   })
 
   it('accepts only a plain hex colour from a peer', () => {
-    expect([safeColor('#1971C2', 'x'), safeColor(' #1971c2', 'x'), safeColor(null, 'x')]).toEqual(['#1971C2', 'x', 'x'])
+    expect([safeColor('#1971C2'), safeColor(' #1971c2'), safeColor(null)]).toEqual(['#1971C2', null, null])
   })
 
   it('gives a name the same colour every time, from the palette', () => {

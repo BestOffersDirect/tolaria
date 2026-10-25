@@ -18,25 +18,29 @@ const FALLBACK_NAME = '?'
 /** Longer names a peer announces are cut: a name only has to be told apart, not read in full. */
 export const MAX_NAME_LENGTH = 64
 
-function field(state: unknown, key: string): unknown {
-  return state instanceof Object ? (state as Record<string, unknown>)[key] : undefined
+interface AnnouncedUser {
+  name?: unknown
+  color?: unknown
 }
 
-function text(value: unknown, fallback: string): string {
-  return typeof value === 'string' && value.trim() !== '' ? value.trim() : fallback
+/** The `user` a client announced in its awareness state, if any. */
+function announcedUser(state: unknown): AnnouncedUser | null {
+  const user = state instanceof Object ? (state as { user?: unknown }).user : undefined
+  return user instanceof Object ? (user as AnnouncedUser) : null
 }
 
 /** A peer's announced name, trimmed and cut to `MAX_NAME_LENGTH` characters. */
 export function safeName(value: unknown): string {
-  return [...text(value, FALLBACK_NAME)].slice(0, MAX_NAME_LENGTH).join('')
+  const trimmed = typeof value === 'string' ? value.trim() : ''
+  return trimmed === '' ? FALLBACK_NAME : [...trimmed].slice(0, MAX_NAME_LENGTH).join('')
 }
 
 /** The only colour form a peer may announce; anything else is replaced by a palette colour. */
 const HEX_COLOR = /^#[0-9a-f]{6}$/iu
 
-/** A peer's announced colour when it is a plain `#rrggbb`, else `fallback`. */
-export function safeColor(value: unknown, fallback: string): string {
-  return typeof value === 'string' && HEX_COLOR.test(value) ? value : fallback
+/** A peer's announced colour when it is a plain `#rrggbb`, else null. */
+export function safeColor(value: unknown): string | null {
+  return typeof value === 'string' && HEX_COLOR.test(value) ? value : null
 }
 
 /** A stable colour for a name, so a person looks the same to everyone. */
@@ -67,10 +71,10 @@ export function initials(name: string): string {
 export function presentUsers(states: ReadonlyMap<number, unknown>, selfId: number): PresentUser[] {
   const users: PresentUser[] = []
   for (const [clientId, state] of states) {
-    const user = field(state, 'user')
-    if (!(user instanceof Object)) continue
-    const name = safeName(field(user, 'name'))
-    users.push({ clientId, name, color: safeColor(field(user, 'color'), userColor(name)), self: clientId === selfId })
+    const user = announcedUser(state)
+    if (!user) continue
+    const name = safeName(user.name)
+    users.push({ clientId, name, color: safeColor(user.color) ?? userColor(name), self: clientId === selfId })
   }
   return users.sort((a, b) => Number(b.self) - Number(a.self) || a.name.localeCompare(b.name))
 }
