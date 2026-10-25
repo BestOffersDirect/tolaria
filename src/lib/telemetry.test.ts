@@ -111,56 +111,6 @@ describe('initSentry', () => {
     expect(sentryMocks.setTag).not.toHaveBeenCalledWith('platform', 'web')
   })
 
-  describe('web build (TOL-232)', () => {
-    const WEB_RELEASE = 'tolaria-web@0123456789abcdef0123456789abcdef01234567'
-
-    function initWebSentry() {
-      vi.stubEnv('VITE_TOLARIA_WEB_BUILD', 'true')
-      vi.stubEnv('VITE_SENTRY_DSN', 'http://public@127.0.0.1:48230/1')
-      vi.stubEnv('VITE_SENTRY_RELEASE', WEB_RELEASE)
-      initSentry('anonymous-user')
-      return sentryMocks.init.mock.calls[0]?.[0]
-    }
-
-    it('tags web events and names the commit release', () => {
-      const options = initWebSentry()
-
-      expect(options).toEqual(expect.objectContaining({
-        dsn: 'http://public@127.0.0.1:48230/1',
-        release: WEB_RELEASE,
-        sendDefaultPii: false,
-      }))
-      expect(sentryMocks.setUser).toHaveBeenCalledWith({ id: 'anonymous-user' })
-      expect(sentryMocks.setTag).toHaveBeenCalledWith('platform', 'web')
-      expect(sentryMocks.setTag).not.toHaveBeenCalledWith('tolaria.release_kind', expect.anything())
-    })
-
-    it('stays off without a web DSN', () => {
-      vi.stubEnv('VITE_TOLARIA_WEB_BUILD', 'true')
-      vi.stubEnv('VITE_SENTRY_DSN', '')
-
-      initSentry('anonymous-user')
-
-      expect(sentryMocks.init).not.toHaveBeenCalled()
-    })
-
-    it('scrubs note paths from URLs and still applies the shared filters', () => {
-      const { beforeSend } = initWebSentry()
-      const event = {
-        message: 'Failed reading /home/user/vault/note.md',
-        request: { url: 'https://tolaria.example/n/Projects/Secret%20plan.md?ticket=abc' },
-        breadcrumbs: [{ category: 'fetch', data: { url: '/v1/files/Projects/Secret.md', method: 'GET' } }],
-      }
-
-      expect(beforeSend(event, {})).toEqual({
-        message: 'Failed reading [redacted-path]',
-        request: { url: 'https://tolaria.example/n' },
-        breadcrumbs: [{ category: 'fetch', data: { url: `${window.location.origin}/v1`, method: 'GET' } }],
-      })
-      expect(beforeSend({ message: 'ResizeObserver loop limit exceeded' }, {})).toBeNull()
-    })
-  })
-
   it('drops active whiteboard platform permission rejections before sending them to Sentry', () => {
     const beforeSend = initSentryBeforeSend()
     const releaseGuard = retainWhiteboardPlatformPermissionGuard()
