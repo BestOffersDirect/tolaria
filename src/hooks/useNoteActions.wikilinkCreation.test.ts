@@ -14,10 +14,6 @@ vi.mock('../mock-tauri', () => ({
   trackMockChange: vi.fn(),
   mockInvoke: vi.fn().mockResolvedValue(''),
 }))
-vi.mock('./mockFrontmatterHelpers', () => ({
-  updateMockFrontmatter: vi.fn(),
-  deleteMockFrontmatterProperty: vi.fn(),
-}))
 
 function workspace(path: string, alias: string): WorkspaceIdentity {
   return {

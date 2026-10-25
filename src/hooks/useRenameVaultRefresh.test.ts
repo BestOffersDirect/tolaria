@@ -14,10 +14,6 @@ vi.mock('../mock-tauri', () => ({
   trackMockChange: vi.fn(),
   mockInvoke: vi.fn().mockResolvedValue(''),
 }))
-vi.mock('./mockFrontmatterHelpers', () => ({
-  updateMockFrontmatter: vi.fn().mockReturnValue('---\ntitle: New Title\n---\n# New Title\n'),
-  deleteMockFrontmatterProperty: vi.fn().mockReturnValue('---\n---\n'),
-}))
 
 function makeEntry(overrides: Partial<VaultEntry> = {}): VaultEntry {
   return {

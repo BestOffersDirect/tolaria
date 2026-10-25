@@ -11,10 +11,6 @@ vi.mock('../mock-tauri', () => ({
   trackMockChange: vi.fn(),
   mockInvoke: vi.fn().mockResolvedValue(''),
 }))
-vi.mock('./mockFrontmatterHelpers', () => ({
-  updateMockFrontmatter: vi.fn().mockReturnValue('---\ntype: Hotel\n---\n'),
-  deleteMockFrontmatterProperty: vi.fn().mockReturnValue('---\n---\n'),
-}))
 
 const baseEntry: VaultEntry = {
   path: '/vault/note.md',
