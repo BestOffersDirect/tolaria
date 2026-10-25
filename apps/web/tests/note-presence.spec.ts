@@ -111,10 +111,10 @@ interface Scene {
 	folder: string;
 	shared: SeededNote;
 	elsewhere: SeededNote;
-	hostContext: BrowserContext;
-	guestContext: BrowserContext;
 	host: Page;
 	guest: Page;
+	/** A third window, in its own browser context, that comes back after going offline. */
+	returning: BrowserContext;
 	testInfo: TestInfo;
 }
 
@@ -173,33 +173,30 @@ async function expectNamedCarets(
 }
 
 /** The guest follows a link to another note. */
-async function expectSwitchClears({ host, guest, folder, elsewhere }: Scene) {
+/**
+ * The guest follows a link to another note. Only leaving matters here: the other note's own
+ * document opening is covered by the editing specs.
+ */
+async function expectSwitchClears({ host, guest, folder }: Scene) {
 	await guest
 		.locator(`.bn-editor .wikilink[data-target="${folder}/elsewhere"]`)
 		.focus();
 	await guest.keyboard.press("Enter");
-	await expectNoteShown(guest, elsewhere.title);
+	await expect(guest).toHaveURL(/elsewhere\.md/u);
 	await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
 	await expect(remoteCursors(host)).toHaveCount(0);
 }
 
-/** The guest goes offline, then comes back. */
-async function expectOfflineClears({
-	host,
-	guest,
-	guestContext,
-	shared,
-}: Scene) {
-	await openNote(guest, shared);
+/** Another window goes offline and comes back online, then closes its tab. */
+async function expectOfflineAndCloseClear({ host, returning, shared }: Scene) {
+	const page = await returning.newPage();
+	await openNote(page, shared);
 	await expect(avatars(host)).toHaveCount(1, { timeout: JOIN_MS });
-	await guestContext.setOffline(true);
+	await returning.setOffline(true);
 	await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
-	await guestContext.setOffline(false);
+	await returning.setOffline(false);
 	await expect(avatars(host)).toHaveCount(1, { timeout: JOIN_MS });
-}
-
-async function expectCloseClears({ host, guest }: Scene) {
-	await guest.close();
+	await page.close();
 	await expect(avatars(host)).toHaveCount(0, { timeout: LEAVE_MS });
 }
 
@@ -211,13 +208,13 @@ test("two windows on a note see each other, and a window that leaves is gone wit
 	await seed(request, notes);
 	const hostContext = await remoteContext(browser, testInfo);
 	const guestContext = await remoteContext(browser, testInfo);
+	const returning = await remoteContext(browser, testInfo);
 	try {
 		const scene: Scene = {
 			...notes,
-			hostContext,
-			guestContext,
 			host: await hostContext.newPage(),
 			guest: await guestContext.newPage(),
+			returning,
 			testInfo,
 		};
 		await openNote(scene.host, notes.shared);
@@ -226,11 +223,11 @@ test("two windows on a note see each other, and a window that leaves is gone wit
 		const names = await expectEachSeesTheOther(scene);
 		await expectNamedCarets(scene, names);
 		await expectSwitchClears(scene);
-		await expectOfflineClears(scene);
-		await expectCloseClears(scene);
+		await expectOfflineAndCloseClear(scene);
 	} finally {
 		await hostContext.close();
 		await guestContext.close();
+		await returning.close();
 		await deleteNote(request, notes.shared.path);
 		await deleteNote(request, notes.elsewhere.path);
 	}
