@@ -45,10 +45,14 @@ function deferred() {
 function liveDocument(synced: Promise<void>): VaultCollabDoc<RemoteBindings> {
 	return {
 		path: mockTab.entry.path,
-		doc: { id: "doc" } as unknown as RemoteBindings["doc"],
+		doc: { id: "doc", clientID: 1 } as unknown as RemoteBindings["doc"],
 		fragment: { id: "fragment" } as unknown as RemoteBindings["fragment"],
 		provider: { id: "provider" } as unknown as RemoteBindings["provider"],
-		awareness: {} as RemoteBindings["awareness"],
+		awareness: {
+			getLocalState: () => null,
+			setLocalState: vi.fn(),
+			setLocalStateField: vi.fn(),
+		} as unknown as RemoteBindings["awareness"],
 		synced,
 		close: vi.fn(),
 	};
