@@ -8,7 +8,7 @@ describe('isPortableName', () => {
   })
 
   it.each([
-    '', '  ', '.', '..', 'trailing.', 'quarterly:plan', 'a/b', 'a\\b', 'what?', 'star*', 'pipe|', '<tag>', '"quoted"',
+    '', '  ', '.', '..', 'trailing.', 'quarterly:plan', 'a/b', 'a\\b', 'what?', 'star*', 'pipe|', 'a<1', 'b>2', 'say"what',
     'tab\there', 'con', 'Lpt1', 'NUL.txt', 'com9.md',
   ])('refuses %j', (name) => {
     expect(isPortableName(name)).toBe(false)
