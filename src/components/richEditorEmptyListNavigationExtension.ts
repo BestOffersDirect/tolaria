@@ -173,8 +173,8 @@ function handleArrowKey(
   consumeKeyboardEvent(event)
 }
 
-function headingLevel(block: BlockLike): number {
-  const value = block.props?.level
+function headingLevel(block: BlockLike | undefined): number {
+  const value = block?.props?.level
   return typeof value === 'number' ? value : Number.parseInt(String(value ?? 1), 10)
 }
 
@@ -183,7 +183,7 @@ function isHeading(block: BlockLike, level: number) {
 }
 
 function headingSectionEndIndex(document: readonly BlockLike[], headingIndex: number) {
-  const level = headingLevel(document[headingIndex])
+  const level = headingLevel(document.at(headingIndex))
   const boundary = document.findIndex((block, index) => index > headingIndex && isHeading(block, level))
   return boundary < 0 ? document.length : boundary
 }
@@ -194,8 +194,8 @@ function collapsedSectionOwnerIndex(
   collapsedIds: ReadonlySet<string>,
 ) {
   for (let index = 0; index < targetIndex; index += 1) {
-    const candidate = document[index]
-    if (candidate.type !== 'heading' || !candidate.id || !collapsedIds.has(candidate.id)) continue
+    const candidate = document.at(index)
+    if (candidate?.type !== 'heading' || !candidate.id || !collapsedIds.has(candidate.id)) continue
     if (targetIndex < headingSectionEndIndex(document, index)) return index
   }
   return targetIndex
@@ -207,7 +207,7 @@ function collapsedSectionEnd(document: readonly BlockLike[], headingId: string, 
 
   const ownerIndex = collapsedSectionOwnerIndex(document, targetIndex, collapsedIds)
   const endIndex = headingSectionEndIndex(document, ownerIndex)
-  return document[endIndex - 1] ?? document[ownerIndex]
+  return document.at(endIndex - 1) ?? document.at(ownerIndex)
 }
 
 function isEligibleCollapsedEnter(event: ArrowEvent, editor: CollapsedEnterEditor, view: RichEditorView) {
