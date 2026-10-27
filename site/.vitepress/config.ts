@@ -16,6 +16,8 @@ export default defineConfig({
   },
   ignoreDeadLinks: [/^\/download\/?(?:index)?$/, /^\/releases\/?(?:index)?$/, /^\/(?:#.*)?$/],
   srcExclude: ["landing/**"],
+  // Emit the docs home as docs/index.html so /docs/ resolves; GitHub Pages 301s /docs to /docs/.
+  rewrites: { "docs.md": "docs/index.md" },
   cleanUrls: true,
   head: [
     ["link", { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
