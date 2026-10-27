@@ -1,9 +1,9 @@
-# Index
+# Docs
 
-Source: index.md
-URL: /
+Source: docs.md
+URL: /docs
 
-<LandingHome />
+<TolariaDocsHome />
 
 ---
 
@@ -105,7 +105,11 @@ URL: /start/install
 
 # Install Tolaria
 
-Tolaria publishes desktop builds for macOS, Windows, and Linux. macOS is the primary day-to-day development target, with Windows and Linux builds supported through the release pipeline and fixed as platform issues are found.
+Tolaria is available on desktop (macOS, Windows, Linux) and mobile (iPhone, iPad).
+
+Desktop builds are published through GitHub Releases and Homebrew. macOS is the primary day-to-day development target, with Windows and Linux builds supported through the release pipeline and fixed as platform issues are found.
+
+The mobile app for iOS is currently in beta via TestFlight.
 
 ## Download
 
@@ -123,6 +127,18 @@ On macOS you can install the cask:
 brew install --cask tolaria
 ```
 
+## Mobile (iPhone and iPad)
+
+Tolaria for iOS is in **beta**. The mobile app brings Tolaria's core features to iPhone and iPad:
+
+- **WYSIWYG Markdown editor** — Fast, native rich-text editing
+- **Real git integration** — Auto-commit on save, with merge support for multi-device workflows  
+- **Sync with desktop** — Vaults sync through iCloud or Files and share the same git repository
+
+To get TestFlight access:
+
+- Join the [Tolaria Discord community](https://discord.gg/tRBC2u428B) to request access
+
 ## Platform Status
 
 | Platform | Status | Notes |
@@ -130,6 +146,7 @@ brew install --cask tolaria
 | macOS | Primary | Apple Silicon and Intel builds are published. Homebrew is available. |
 | Windows | Supported, early | NSIS installers and updater bundles are Tauri-signed. Authenticode publisher signing will be added after Windows certificate provisioning; company-managed SmartScreen, Defender, or WDAC policies can still require IT approval before install. |
 | Linux | Supported, early | AppImage, deb, and RPM artifacts are published. Desktop behavior depends on distribution WebKitGTK and input-method integration. |
+| iOS (iPhone, iPad) | Beta | Available via TestFlight. Request access through the Discord community. |
 
 See [Supported Platforms](/reference/supported-platforms) for the current support policy.
 
@@ -1730,6 +1747,10 @@ Tolaria is supported by a panel of tools Luca uses every day to keep the project
 
 Use the [product board](https://tolaria.canny.io/) for feature ideas. Search first, upvote existing ideas, and create a new post when the request is genuinely new.
 
+## Community
+
+Join the [Tolaria Discord server](https://discord.gg/tRBC2u428B) to connect with other users, request mobile beta access, share tips, and stay updated on development.
+
 ## Discussions
 
 Use [GitHub Discussions](https://github.com/refactoringhq/tolaria/discussions) for questions, conversations, show and tell, and broader community context.
@@ -2379,17 +2400,30 @@ URL: /reference/supported-platforms
 
 # Supported Platforms
 
-Tolaria is a desktop app built with Tauri. Releases currently target macOS, Windows, and Linux.
+Tolaria is available on desktop (built with Tauri) and mobile (React Native with Expo). Releases currently target macOS, Windows, Linux, iPhone, and iPad.
 
 | Platform | Current support | Notes |
 | --- | --- | --- |
 | macOS | Primary | Main development and QA target. Apple Silicon and Intel artifacts are published. |
 | Windows | Supported, early | NSIS installers and signed updater bundles are published. Menu, shell-path, and credential-helper behavior receive platform-specific fixes as they appear. |
 | Linux | Supported, early | AppImage, deb, and RPM artifacts are published. Behavior can depend on distro WebKitGTK packages, Wayland/X11 details, and input-method setup. |
+| iOS (iPhone, iPad) | Beta | Available via TestFlight. WYSIWYG editor, real git sync, iCloud/Files integration. Request access through the [Discord community](https://discord.gg/tRBC2u428B). |
 
 ## Support Policy
 
-Primary support means the platform is part of normal development and release validation. Supported, early means release artifacts exist and the app is expected to work, but platform-specific bugs can take longer to diagnose than macOS issues.
+Primary support means the platform is part of normal development and release validation. Supported, early means release artifacts exist and the app is expected to work, but platform-specific bugs can take longer to diagnose than macOS issues. Beta means the platform is under active development with core features working but not all desktop features implemented yet.
+
+## Mobile vs Desktop Features
+
+The iOS app (iPhone and iPad) currently focuses on core note editing and sync:
+
+- ✅ WYSIWYG Markdown editing with TenTap/Tiptap
+- ✅ Git auto-commit and merge support
+- ✅ Sync through iCloud or Files
+- ✅ GitHub repository integration
+- ⏳ Desktop-only: AI panel, advanced search, some desktop power-user features are not yet on mobile
+
+The mobile app shares the same vault format and git repository as the desktop app, so you can seamlessly work across devices.
 
 ## Reporting Platform Bugs
 
