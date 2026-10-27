@@ -78,3 +78,42 @@ function resolveDiagnosticPath(path, repositoryRoot) {
   if (!path) return ''
   return path.startsWith('/') ? path : `${repositoryRoot}/${path}`
 }
+
+/** Reads `exclude_paths` from the root .codacy.yaml, the same list Codacy's hosted analysis skips. */
+export function codacyExcludePatterns(yamlText) {
+  const patterns = []
+  let inExcludes = false
+  for (const line of yamlText.split('\n')) {
+    if (/^\S/u.test(line)) inExcludes = /^exclude_paths:\s*$/u.test(line)
+    if (!inExcludes) continue
+    const entry = line.match(/^\s+-\s+(?:"([^"]*)"|'([^']*)'|(\S+))\s*(?:#.*)?$/u)
+    if (entry) patterns.push(entry[1] ?? entry[2] ?? entry[3])
+  }
+  return patterns
+}
+
+export function globToRegExp(glob) {
+  let source = ''
+  for (let index = 0; index < glob.length; index += 1) {
+    const char = glob[index]
+    if (char === '*' && glob[index + 1] === '*') {
+      const slash = glob[index + 2] === '/'
+      source += slash ? '(?:.*/)?' : '.*'
+      index += slash ? 2 : 1
+    } else if (char === '*') source += '[^/]*'
+    else if (char === '?') source += '[^/]'
+    else source += char.replace(/[.+^${}()|[\]\\]/gu, '\\$&')
+  }
+  return new RegExp(`^${source}$`, 'u')
+}
+
+/** Drops files matching the Codacy exclude list so the local gate agrees with hosted Codacy. */
+export function withoutExcludedPaths(additions, patterns, repositoryRoot) {
+  const matchers = patterns.map(globToRegExp)
+  const kept = new Map()
+  for (const [file, lines] of additions) {
+    const relative = file.startsWith(`${repositoryRoot}/`) ? file.slice(repositoryRoot.length + 1) : file
+    if (!matchers.some((matcher) => matcher.test(relative))) kept.set(file, lines)
+  }
+  return kept
+}
