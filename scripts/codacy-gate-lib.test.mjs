@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
-import { addedLinesFromDiff, biomeGateFailures, codacyExcludePatterns, eslintGateFailures, globToRegExp, withoutExcludedPaths } from './codacy-gate-lib.mjs'
+import { addedLinesFromDiff, biomeGateFailures, codacyExcludePatterns, eslintGateFailures, matchesCodacyGlob, withoutExcludedPaths } from './codacy-gate-lib.mjs'
 import { isAuditedRustUnsafe, sarifGateFailures, scannerOutputFailures, scannerProcessFailures } from './codacy-sarif.mjs'
 
 test('reports findings only on added lines', () => {
@@ -149,17 +149,19 @@ test('reports security ESLint findings only on added lines at every severity', (
 })
 
 test('reads exclude_paths from .codacy.yaml', () => {
-  const yaml = ['---', 'exclude_paths:', '  - "dist/**"', '  # imported code', "  - 'site/landing/**'", '  - "**/package-lock.json"', 'engines:', '  - "not/an/exclude"'].join('\n')
-  assert.deepEqual(codacyExcludePatterns(yaml), ['dist/**', 'site/landing/**', '**/package-lock.json'])
+  const yaml = ['---', 'exclude_paths:', '  - "dist/**"', '  # imported code', "  - 'site/landing/**'  # mirrored", '  - plain/path/**', '  - "**/package-lock.json"', 'engines:', '  - "not/an/exclude"'].join('\n')
+  assert.deepEqual(codacyExcludePatterns(yaml), ['dist/**', 'site/landing/**', 'plain/path/**', '**/package-lock.json'])
 })
 
 test('matches Codacy globs on repository-relative paths', () => {
-  assert.ok(globToRegExp('site/landing/**').test('site/landing/src/App.tsx'))
-  assert.ok(!globToRegExp('site/landing/**').test('site/landingx/App.tsx'))
-  assert.ok(!globToRegExp('site/landing/**').test('site/.vitepress/theme/tolaria/Layout.vue'))
-  assert.ok(globToRegExp('**/package-lock.json').test('package-lock.json'))
-  assert.ok(globToRegExp('**/package-lock.json').test('apps/web/package-lock.json'))
-  assert.ok(!globToRegExp('dist/**').test('apps/web/dist/index.js'))
+  assert.ok(matchesCodacyGlob('site/landing/**', 'site/landing/src/App.tsx'))
+  assert.ok(!matchesCodacyGlob('site/landing/**', 'site/landingx/App.tsx'))
+  assert.ok(!matchesCodacyGlob('site/landing/**', 'site/.vitepress/theme/tolaria/Layout.vue'))
+  assert.ok(matchesCodacyGlob('**/package-lock.json', 'package-lock.json'))
+  assert.ok(matchesCodacyGlob('**/package-lock.json', 'apps/web/package-lock.json'))
+  assert.ok(!matchesCodacyGlob('dist/**', 'apps/web/dist/index.js'))
+  assert.ok(matchesCodacyGlob('src/*.test.ts', 'src/a.test.ts'))
+  assert.ok(!matchesCodacyGlob('src/*.test.ts', 'src/nested/a.test.ts'))
 })
 
 test('drops excluded files before findings are matched to added lines', () => {

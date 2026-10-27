@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { addedLinesFromDiff, biomeGateFailures, codacyExcludePatterns, eslintGateFailures, withoutExcludedPaths } from './codacy-gate-lib.mjs'
 import { scannerOutputFailures } from './codacy-sarif.mjs'
@@ -14,8 +14,8 @@ const diff = execFileSync('git', ['diff', '--unified=0', `${base}...HEAD`], {
   encoding: 'utf8',
   maxBuffer: 20 * 1024 * 1024,
 })
-const codacyConfig = resolve(root, '.codacy.yaml')
-const excludePatterns = existsSync(codacyConfig) ? codacyExcludePatterns(readFileSync(codacyConfig, 'utf8')) : []
+const codacyConfig = spawnSync('git', ['show', 'HEAD:.codacy.yaml'], { cwd: root, encoding: 'utf8' })
+const excludePatterns = codacyConfig.status === 0 ? codacyExcludePatterns(codacyConfig.stdout) : []
 const additions = withoutExcludedPaths(addedLinesFromDiff(diff, root), excludePatterns, root)
 
 if (additions.size === 0) {
