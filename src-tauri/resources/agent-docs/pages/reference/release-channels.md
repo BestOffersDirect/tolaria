@@ -21,7 +21,7 @@ The public download page points at the latest stable release.
 
 ## Alpha
 
-Alpha follows pushes to `main`. It receives fixes and features earlier, but it can be rougher than Stable.
+Alpha follows pushes to `main`. It receives fixes and features earlier, but it can be rougher than Stable. Desktop updates pull from the alpha metadata automatically, and mobile apps on the Alpha channel receive over-the-air (OTA) updates automatically.
 
 The alpha updater metadata lives at:
 
@@ -35,6 +35,10 @@ Compatibility endpoints also point to the alpha metadata:
 /latest.json
 /latest-canary.json
 ```
+
+## Mobile Channels
+
+The iOS app (iPhone and iPad) includes settings to switch between **Stable** and **Alpha** channels. The selected channel controls which OTA updates the app receives. Mobile Alpha follows desktop Alpha but updates independently through Expo's update service.
 
 ## Before Switching
 

@@ -1049,7 +1049,12 @@ Display preferences live in local app settings unless a setting is intentionally
 
 ## Theme
 
-Choose Light, Dark, or System in Settings. System follows the operating system appearance at runtime.
+Choose Light, Dark, Hybrid, or System in Settings:
+
+- **Light** — Light sidebar and light note content.
+- **Dark** — Dark sidebar and dark note content.
+- **Hybrid** — Dark sidebar with light note content, for focused reading in a subdued UI.
+- **System** — Follows the operating system appearance at runtime.
 
 You can also switch theme mode from the command palette.
 
@@ -1129,7 +1134,7 @@ Tolaria gives you two ways to ask for AI help: open the AI panel for an ongoing 
 
 Open Settings and choose the default AI target:
 
-- **Coding agent** for tool-backed vault editing through Claude Code, Codex, GitHub Copilot, OpenCode, Pi, Antigravity CLI, Kiro, or Hermes Agent.
+- **Coding agent** for tool-backed vault editing through Claude Code, Codex, GitHub Copilot, OpenCode, Pi, Antigravity CLI, Kiro, or Hermes Agent. Claude Code in the AI panel can use your configured Skills for specialized capabilities.
 - **Local model** for Ollama or LM Studio chat over note context.
 - **API model** for OpenAI, Anthropic, Gemini, OpenRouter, or an OpenAI-compatible endpoint.
 
@@ -1994,7 +1999,7 @@ The public download page points at the latest stable release.
 
 ## Alpha
 
-Alpha follows pushes to `main`. It receives fixes and features earlier, but it can be rougher than Stable.
+Alpha follows pushes to `main`. It receives fixes and features earlier, but it can be rougher than Stable. Desktop updates pull from the alpha metadata automatically, and mobile apps on the Alpha channel receive over-the-air (OTA) updates automatically.
 
 The alpha updater metadata lives at:
 
@@ -2008,6 +2013,10 @@ Compatibility endpoints also point to the alpha metadata:
 /latest.json
 /latest-canary.json
 ```
+
+## Mobile Channels
+
+The iOS app (iPhone and iPad) includes settings to switch between **Stable** and **Alpha** channels. The selected channel controls which OTA updates the app receives. Mobile Alpha follows desktop Alpha but updates independently through Expo's update service.
 
 ## Before Switching
 
