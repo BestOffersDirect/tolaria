@@ -47,7 +47,7 @@ async function loadStars() {
 // band: page frontmatter `band:` wins, else themeConfig.tolaria.bands["/concepts/vaults"] (no content edits needed)
 const band = computed(() => {
   if (frontmatter.value.band) return frontmatter.value.band
-  const path = "/" + page.value.relativePath.replace(/(index)?\.md$/, "")
+  const path = `/${page.value.relativePath.replace(/(index)?\.md$/, "")}`
   return opts.value.bands?.[path] ?? opts.value.bands?.[path.replace(/\/$/, "")] ?? null
 })
 const isHero = computed(() => Boolean(frontmatter.value.tolaria))

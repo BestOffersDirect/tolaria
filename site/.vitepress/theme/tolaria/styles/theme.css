@@ -102,9 +102,11 @@ body { -webkit-font-smoothing: antialiased; }
   background: var(--tl-glass); -webkit-backdrop-filter: blur(20px) saturate(1.5); backdrop-filter: blur(20px) saturate(1.5);
 }
 .tl-scrolled .VPNav { box-shadow: 0 6px 24px -16px rgb(10 30 80 / 0.35); }
-.VPNavBar, .VPNavBar .content-body, .VPNavBar.has-sidebar .content-body, .VPNavBar .title, .VPNavBar:not(.home.top) .content-body { background: transparent !important; }
+/* VitePress paints the bar, its title and content-body from these variables; clearing them lets the glass show through. */
+.VPNav .VPNavBar { --vp-nav-bg-color: transparent; --vp-sidebar-bg-color: transparent; background-color: transparent; }
 .VPNavBar .divider, .VPNavBar .divider-line { display: none; }
-.VPNavBarTitle.has-sidebar .title { border-bottom-color: transparent !important; }
+/* VitePress draws the title's bottom border with --vp-c-divider when there is a sidebar; hide it inside the glass bar. */
+.VPNavBarTitle.has-sidebar { --vp-c-divider: transparent; }
 .VPNavBarTitle .title { gap: 8px; }
 .VPNavBarTitle .title > span { font-family: var(--tl-font-display); font-size: 20px; font-weight: 700; letter-spacing: 0; color: var(--vp-c-text-1); line-height: 1; }
 .tl-drop { height: 24px; width: auto; }
@@ -121,23 +123,24 @@ body { -webkit-font-smoothing: antialiased; }
 .tl-star { color: var(--vp-c-text-2); }
 .tl-star:hover { background: var(--tl-gray-100); color: var(--vp-c-text-1); }
 .dark .tl-star:hover { background: var(--tl-gray-900); }
-.tl-download { background: var(--tl-primary); color: var(--tl-primary-fg) !important; }
+.tl-nav-actions .tl-download { background: var(--tl-primary); color: var(--tl-primary-fg); }
 .tl-download:hover { opacity: 0.9; }
 .tl-download:active, .tl-star:active { transform: scale(0.98); }
 .tl-star:focus-visible, .tl-download:focus-visible { outline: 3px solid rgb(21 93 255 / 0.5); outline-offset: 2px; }
 @media (max-width: 767px) {
   .tl-nav-actions { margin-left: 4px; }
-  .tl-star span { display: none; }
+  .tl-nav-actions .tl-star span { display: none; }
   .tl-star { padding: 0 8px; }
   .tl-download { padding: 0 10px; }
 }
-@media (max-width: 400px) { .tl-download span { display: none; } }
+@media (max-width: 400px) { .tl-nav-actions .tl-download span { display: none; } }
 
 /* search button in the nav */
-.DocSearch-Button { border-radius: 12px !important; background: var(--tl-gray-100) !important; }
-.dark .DocSearch-Button { background: var(--tl-gray-900) !important; }
-.DocSearch-Button:hover { box-shadow: inset 0 0 0 1px var(--vp-c-brand-1) !important; }
-@media (max-width: 767px) { .DocSearch-Button, .dark .DocSearch-Button { background: transparent !important; } .DocSearch-Button:hover { box-shadow: none !important; } }
+/* VitePress fills the button with --vp-c-bg-alt from 768px up and leaves it transparent below, which is what we want. */
+.VPNavBar .DocSearch-Button { --vp-c-bg-alt: var(--tl-gray-100); border-radius: 12px; }
+.dark .VPNavBar .DocSearch-Button { --vp-c-bg-alt: var(--tl-gray-900); }
+.VPNavBar .DocSearch-Button:hover { box-shadow: inset 0 0 0 1px var(--vp-c-brand-1); }
+@media (max-width: 767px) { .VPNavBar .DocSearch-Button:hover { box-shadow: none; } }
 
 /* ------------------------------------------------------------------ sidebar */
 .VPSidebar { border-right: 1px solid var(--vp-c-divider); }
@@ -184,7 +187,7 @@ body { -webkit-font-smoothing: antialiased; }
   html.tl-hero-page .VPNavBar .wrapper { padding: 0 8px 0 16px; }
   html.tl-hero-page .VPNavBar .container { max-width: none; }
   html.tl-hero-page .VPNavBar .content-body, html.tl-hero-page .VPNavBarTitle .title { height: 60px; }
-  html.tl-hero-page .VPContent { padding-top: 0 !important; }
+  html.tl-hero-page .VPContent { padding-top: 0; }
   html.tl-hero-page .VPNavScreen { top: calc(env(safe-area-inset-top) + 84px); }
   html.tl-hero-page .VPFooter { border-top: 0; }
 }

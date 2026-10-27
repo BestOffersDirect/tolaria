@@ -7,7 +7,7 @@ export const LANDING = { home: "/", features: "/#features", download: "/download
 
 /** Docs sections, shared by the nav dropdown and the docs home cards. */
 export const DOC_SECTIONS: DefaultTheme.NavItemWithLink[] = [
-  { text: "Overview", link: "/docs" },
+  { text: "Overview", link: "/docs/" },
   { text: "Start", link: "/start/install" },
   { text: "Concepts", link: "/concepts/vaults" },
   { text: "Guides", link: "/guides/capture-a-note" },

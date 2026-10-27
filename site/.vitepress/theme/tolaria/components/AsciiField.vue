@@ -26,15 +26,16 @@ const RAMP = " .·:-=+*#%@"
 const MD = "#[]->*`_"
 
 onMounted(() => {
-  const cv = cvRef.value!
-  const host = cv.parentElement!.parentElement!
-  const ctx = cv.getContext("2d")
-  if (!ctx) return
+  const cv = cvRef.value
+  const host = cv?.parentElement?.parentElement
+  const ctx = cv?.getContext("2d")
+  if (!cv || !host || !ctx) return
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches
   const CHARS = RAMP + MD
   let w = 0, h = 0, dpr = 1, cw = 14, ch = 20, cols = 0, rows = 0
   let heat = new Float32Array(0), scr = new Uint8Array(0), calm = new Float32Array(0)
-  const atlas = document.createElement("canvas"), actx = atlas.getContext("2d")!
+  const atlas = document.createElement("canvas"), actx = atlas.getContext("2d")
+  if (!actx) return
   let raf = 0, last = 0, visible = true, hot = 0
   const t0 = performance.now()
   const ptr = { x: 0, y: 0, has: false }
@@ -95,7 +96,7 @@ onMounted(() => {
 
   const draw = (now: number, dt: number) => {
     const t = reduce ? 4 : (now - t0) / 1000
-    const k = dt ? Math.pow(0.5, dt / 220) // heat halves every ~220ms, so a stroke fades out over ~800ms
+    const k = dt ? 0.5 ** (dt / 220) // heat halves every ~220ms, so a stroke fades out over ~800ms
       : 1
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height)
     const sw = Math.ceil(cw * dpr), sh = Math.ceil(ch * dpr)
