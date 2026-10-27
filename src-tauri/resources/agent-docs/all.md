@@ -135,9 +135,7 @@ Tolaria for iOS is in **beta**. The mobile app brings Tolaria's core features to
 - **Real git integration** — Auto-commit on save, with merge support for multi-device workflows  
 - **Sync with desktop** — Vaults sync through iCloud or Files and share the same git repository
 
-To get TestFlight access:
-
-- Join the [Tolaria Discord community](https://discord.gg/tRBC2u428B) to request access
+To join the beta, install Apple's TestFlight app, then open the [public TestFlight invite](https://testflight.apple.com/join/7aPD4GAB) on your iPhone or iPad.
 
 ## Platform Status
 
@@ -146,7 +144,7 @@ To get TestFlight access:
 | macOS | Primary | Apple Silicon and Intel builds are published. Homebrew is available. |
 | Windows | Supported, early | NSIS installers and updater bundles are Tauri-signed. Authenticode publisher signing will be added after Windows certificate provisioning; company-managed SmartScreen, Defender, or WDAC policies can still require IT approval before install. |
 | Linux | Supported, early | AppImage, deb, and RPM artifacts are published. Desktop behavior depends on distribution WebKitGTK and input-method integration. |
-| iOS (iPhone, iPad) | Beta | Available via TestFlight. Request access through the Discord community. |
+| iOS (iPhone, iPad) | Beta | Public beta via [TestFlight](https://testflight.apple.com/join/7aPD4GAB). |
 
 See [Supported Platforms](/reference/supported-platforms) for the current support policy.
 
@@ -1754,11 +1752,7 @@ Use the [product board](https://tolaria.canny.io/) for feature ideas. Search fir
 
 ## Community
 
-Join the [Tolaria Discord server](https://discord.gg/tRBC2u428B) to connect with other users, request mobile beta access, share tips, and stay updated on development.
-
-## Discussions
-
-Use [GitHub Discussions](https://github.com/refactoringhq/tolaria/discussions) for questions, conversations, show and tell, and broader community context.
+Join the [Tolaria Discord server](https://discord.gg/tRBC2u428B) for questions, conversations, show and tell, tips, and development updates.
 
 ## Contribute Code
 
@@ -2421,7 +2415,7 @@ Tolaria is available on desktop (built with Tauri) and mobile (React Native with
 | macOS | Primary | Main development and QA target. Apple Silicon and Intel artifacts are published. |
 | Windows | Supported, early | NSIS installers and signed updater bundles are published. Menu, shell-path, and credential-helper behavior receive platform-specific fixes as they appear. |
 | Linux | Supported, early | AppImage, deb, and RPM artifacts are published. Behavior can depend on distro WebKitGTK packages, Wayland/X11 details, and input-method setup. |
-| iOS (iPhone, iPad) | Beta | Available via TestFlight. WYSIWYG editor, real git sync, iCloud/Files integration. Request access through the [Discord community](https://discord.gg/tRBC2u428B). |
+| iOS (iPhone, iPad) | Beta | Public beta via [TestFlight](https://testflight.apple.com/join/7aPD4GAB). WYSIWYG editor, real git sync, iCloud/Files integration. |
 
 ## Support Policy
 

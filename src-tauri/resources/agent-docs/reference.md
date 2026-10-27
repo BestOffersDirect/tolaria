@@ -26,11 +26,7 @@ Use the [product board](https://tolaria.canny.io/) for feature ideas. Search fir
 
 ## Community
 
-Join the [Tolaria Discord server](https://discord.gg/tRBC2u428B) to connect with other users, request mobile beta access, share tips, and stay updated on development.
-
-## Discussions
-
-Use [GitHub Discussions](https://github.com/refactoringhq/tolaria/discussions) for questions, conversations, show and tell, and broader community context.
+Join the [Tolaria Discord server](https://discord.gg/tRBC2u428B) for questions, conversations, show and tell, tips, and development updates.
 
 ## Contribute Code
 
@@ -693,7 +689,7 @@ Tolaria is available on desktop (built with Tauri) and mobile (React Native with
 | macOS | Primary | Main development and QA target. Apple Silicon and Intel artifacts are published. |
 | Windows | Supported, early | NSIS installers and signed updater bundles are published. Menu, shell-path, and credential-helper behavior receive platform-specific fixes as they appear. |
 | Linux | Supported, early | AppImage, deb, and RPM artifacts are published. Behavior can depend on distro WebKitGTK packages, Wayland/X11 details, and input-method setup. |
-| iOS (iPhone, iPad) | Beta | Available via TestFlight. WYSIWYG editor, real git sync, iCloud/Files integration. Request access through the [Discord community](https://discord.gg/tRBC2u428B). |
+| iOS (iPhone, iPad) | Beta | Public beta via [TestFlight](https://testflight.apple.com/join/7aPD4GAB). WYSIWYG editor, real git sync, iCloud/Files integration. |
 
 ## Support Policy
 
