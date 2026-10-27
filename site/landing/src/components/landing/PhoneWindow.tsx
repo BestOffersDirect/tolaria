@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react"
 import {
   ArchiveIcon, BatteryFullIcon, CaretDownIcon, CellSignalFullIcon, CheckIcon, CodeIcon, CommandIcon, DotsThreeIcon, FileTextIcon,
-  FolderIcon, FunnelSimpleIcon, GearSixIcon, LinkSimpleIcon, ListBulletsIcon, MagnifyingGlassIcon, PlusIcon, RocketIcon, StarIcon,
-  TagIcon, TextBIcon, TextHIcon, TextItalicIcon, TrayIcon, UserIcon, WifiHighIcon, ArrowsClockwiseIcon, EyeIcon,
+  FolderIcon, FunnelSimpleIcon, GearSixIcon, LinkSimpleIcon, ListBulletsIcon, MagnifyingGlassIcon, PlusIcon, StarIcon,
+  TextBIcon, TextHIcon, TextItalicIcon, TrayIcon, WrenchIcon, WifiHighIcon, ArrowsClockwiseIcon, EyeIcon,
 } from "@phosphor-icons/react"
 import { MOBILE_SCREENSHOTS } from "@/content"
+import { TYPES, type TypeKey, ESSAY, VAULT, NoteTable, MermaidFlow, CodeBlock, TypeChip } from "./mock-notes"
 import { reducedMotion } from "@/motion"
 
 // Tolaria on iPhone, in an iPhone frame: a light-mode HTML recreation matched to Karn's iOS captures
@@ -15,7 +16,7 @@ import { reducedMotion } from "@/motion"
 const W = 402, H = 874
 const C = { rule: "#e9e9e7", ink: "#37352f", head: "#2f2d27", muted: "#787774", faint: "#9b9a97", blue: "#2c5cf6" }
 
-// screen="note": a static frame on the "Get familiar with Tolaria" note (used by the Peel to Markdown stage).
+// screen="note": a static frame on the "From notes to essays" essay (used by the Peel to Markdown stage).
 export function PhoneWindow({ className = "", screen = "loop", style }: { className?: string; screen?: "loop" | "note"; style?: React.CSSProperties }) {
   const box = useRef<HTMLDivElement>(null)
   const [s, setS] = useState(0.6)
@@ -49,36 +50,40 @@ function Shots() {
   ))
 }
 
-const INBOX: [string, string][] = [
-  ["Walkthroughs", "You can find some Loom walkthroughs below — they are short and to the point. I will add more over time"],
-  ["Sidebar", "The sidebar is your primary navigation tool. It groups notes in different ways so you can find what you need..."],
-  ["Principles", "Tolaria is built on a few core principles that guide our design decisions:"],
-  ["Note List", "The note list shows the subset of notes selected by the current sidebar section. For example, clicking \"Ty..."],
-  ["Editor", "The editor is where you write and edit your notes. Tolaria supports two modes:"],
-  ["Bottom Bar", "The bottom bar is Tolaria's status bar — more informational than interactive. It keeps you aware..."],
-  ["Git and AutoGit", "Tolaria vaults have first-class, optional Git support. You retain control over when to..."],
+// Inbox rows span several types, each with its own colour (same types as the Mac's sidebar).
+const INBOX: [string, string, TypeKey][] = [
+  ["Writing is thinking", "You don't write down what you think. You find out what you think by trying to write it down...", "evergreen"],
+  [ESSAY.title, ESSAY.lede, "essay"],
+  ["A Philosophy of Software Design", "Deep modules: simple interfaces that hide a lot of complexity. Highlights from chapters 4–6...", "reading"],
+  ["Agents need context, not prompts", "The best agent setups I've seen don't have clever prompts. They have great context...", "idea"],
+  ["Jordan Lee", "Staff engineer, platform team. Wants to compare notes on onboarding docs...", "person"],
+  ["Weekly digest #42", "Seven reads from this week: monorepos, on-call fatigue, writing design docs...", "digest"],
+  ["Tolaria", "Notes, links and decisions about Tolaria, the Markdown knowledge base...", "topic"],
 ]
-const PROJECTS: [string, string][] = [
-  ["Get familiar with Tolaria", "Use this checklist as a 15–20 minute tour of Tolaria. Every link opens a real file you can..."],
-  ["Project Dashboard", "The block below is stored as fenced HTML inside this Markdown note. Tolaria renders it..."],
+const PROJECTS: [string, string, TypeKey][] = [
+  ["Get familiar with Tolaria", "Use this checklist as a 15–20 minute tour of Tolaria. Every link opens a real file you can...", "project"],
+  ["Project Dashboard", "The block below is stored as fenced HTML inside this Markdown note. Tolaria renders it...", "project"],
+  ["Newsletter redesign", "New layout for the weekly issue: shorter intro, one deep dive, links at the bottom...", "project"],
+  ["Podcast season 3", "Guest list, recording schedule and the editing checklist for the next ten episodes...", "project"],
+  ["Q4 reading list", "Five books on engineering management and writing, with a note per chapter...", "project"],
 ]
 
-function List({ title, rows, project, className }: { title: string; rows: [string, string][]; project?: boolean; className: string }) {
+function List({ title, rows, project, className }: { title: string; rows: [string, string, TypeKey][]; project?: boolean; className: string }) {
   return (
     <div className={`absolute inset-0 bg-white ${className}`}>
       <div className="flex h-[52px] items-center justify-between px-4" style={{ borderBottom: `1px solid ${C.rule}` }}>
         <span className="text-[15px] font-medium" style={{ color: C.head }}>{title}</span><MagnifyingGlassIcon className="size-[18px]" style={{ color: C.muted }} />
       </div>
-      {rows.map(([t, b], i) => (
+      {rows.map(([t, b, k], i) => { const I = TYPES[k].icon; return (
         <div key={t} className="relative h-[98px] px-4 pt-[15px]" style={{ borderBottom: `1px solid ${C.rule}` }}>
-          {project && i === 0 && <div className="m-tap absolute inset-0 bg-[#fcebeb]" />}
+          {project && i === 0 && <div className="m-tap absolute inset-0" style={{ background: TYPES.project.tint }} />}
           <div className="relative flex items-center justify-between">
             <span className="truncate text-[15px] leading-5 font-medium" style={{ color: C.head }}>{t}</span>
-            {project ? <RocketIcon className="size-4 shrink-0 text-[#e53e3e]" /> : <FileTextIcon weight="fill" className="size-4 shrink-0 text-[#2fa36b]" />}
+            <I className="size-4 shrink-0" style={{ color: TYPES[k].color }} />
           </div>
           <div className="relative mt-[9px] line-clamp-2 text-[13px] leading-[18px]" style={{ color: C.muted }}>{b}</div>
         </div>
-      ))}
+      ) })}
       <span className="absolute right-4 bottom-[64px] flex size-12 items-center justify-center rounded-full shadow-lg" style={{ background: C.blue }}><PlusIcon weight="bold" className="size-6 text-white" /></span>
     </div>
   )
@@ -100,18 +105,15 @@ function Side() {
   )
   return (
     <div className="m-side absolute inset-y-0 left-0 w-[262px] px-1.5" style={{ background: "#f7f6f3", borderRight: `1px solid ${C.rule}` }}>
-      <div className="flex h-[52px] items-center justify-between px-2.5 text-[15px] font-medium" style={{ color: C.head }}>Getting Started<CaretDownIcon className="size-4" style={{ color: C.muted }} /></div>
-      <Row icon={TrayIcon} label="Inbox" n={13} active />
-      <Row icon={FileTextIcon} label="All Notes" n={25} />
+      <div className="flex h-[52px] items-center justify-between px-2.5 text-[15px] font-medium" style={{ color: C.head }}>{VAULT}<CaretDownIcon className="size-4" style={{ color: C.muted }} /></div>
+      <Row icon={TrayIcon} label="Inbox" n={12} active />
+      <Row icon={FileTextIcon} label="All Notes" n={3712} />
       <Row icon={ArchiveIcon} label="Archive" n={0} />
       <Head l="Views" />
       <Row icon={FunnelSimpleIcon} label="Start here!" n={16} />
       <Head l="Types" eye />
-      <Row icon={RocketIcon} label="Projects" n={2} color="#e53e3e" tap />
-      <Row icon={FileTextIcon} label="Notes" n={16} color="#2fa36b" />
-      <Row icon={TagIcon} label="Topics" n={1} color="#2fa36b" />
-      <Row icon={UserIcon} label="People" n={1} color="#d9a21b" />
-      <Row icon={FileTextIcon} label="Types" n={5} color={C.blue} />
+      <Row icon={TYPES.project.icon} label="Projects" n={TYPES.project.n} color={TYPES.project.color} tap />
+      {(["essay", "evergreen", "reading", "person", "idea"] as const).map((k) => <Row key={k} icon={TYPES[k].icon} label={TYPES[k].label} n={TYPES[k].n} color={TYPES[k].color} />)}
       <Head l="Folders" />
       <div className="pl-4"><Row icon={FolderIcon} label="attachments" /><Row icon={FolderIcon} label="views" /></div>
       <div className="absolute inset-x-1.5 bottom-[30px] flex gap-2">
@@ -135,7 +137,7 @@ function Note() {
   return (
     <div className="m-note absolute inset-0 bg-white shadow-[-12px_0_32px_rgba(0,0,0,0.08)]">
       <div className="flex h-[52px] items-center gap-2 px-4" style={{ borderBottom: `1px solid ${C.rule}` }}>
-        <RocketIcon className="size-[18px] shrink-0 text-[#e53e3e]" /><span className="flex-1 truncate text-[15px] font-medium" style={{ color: C.head }}>get-familiar-with-tolaria.md</span>
+        <WrenchIcon className="size-[18px] shrink-0" style={{ color: TYPES.project.color }} /><span className="flex-1 truncate text-[15px] font-medium" style={{ color: C.head }}>get-familiar-with-tolaria.md</span>
         <span className="flex items-center gap-4" style={{ color: C.muted }}><StarIcon className="size-[18px]" /><CodeIcon className="size-[18px]" /><DotsThreeIcon weight="bold" className="size-[18px]" /></span>
       </div>
       <div className="px-6 pt-6 text-[16px] leading-[23px]">
@@ -183,12 +185,39 @@ function Recreation() {
   )
 }
 
+// The Peel's iPhone: the same Essay as the Mac and the .md file (mock-notes.tsx), on the phone.
+function EssayNote() {
+  const I = TYPES.essay.icon
+  return (
+    <div className="absolute inset-0 bg-white">
+      <div className="flex h-[52px] items-center gap-2 px-4" style={{ borderBottom: `1px solid ${C.rule}` }}>
+        <I className="size-[18px] shrink-0" style={{ color: TYPES.essay.color }} /><span className="flex-1 truncate text-[15px] font-medium" style={{ color: C.head }}>{ESSAY.file}</span>
+        <span className="flex items-center gap-4" style={{ color: C.muted }}><StarIcon className="size-[18px]" /><CodeIcon className="size-[18px]" /><DotsThreeIcon weight="bold" className="size-[18px]" /></span>
+      </div>
+      <div className="px-6 pt-6 text-[16px] leading-[23px]">
+        <div className="text-[28px] leading-[36px] font-bold" style={{ color: C.head }}>{ESSAY.title}</div>
+        <div className="mt-2 flex gap-1.5 text-[13px] leading-5"><TypeChip k="essay" /><span className="rounded-[0.3em] px-[0.45em]" style={{ background: "var(--color-yellow-50)", color: "var(--color-yellow-700)" }}>Draft</span></div>
+        <div className="mt-4 h-px" style={{ background: C.rule }} />
+        <p className="mt-4">{ESSAY.lede}</p>
+        <div className="mt-4 text-[15px]"><NoteTable /></div>
+        <div className="mt-3 text-[14px]"><MermaidFlow /></div>
+        <div className="mt-3 text-[15px]"><CodeBlock /></div>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 flex h-[82px] items-start gap-1 bg-white px-4 pt-3" style={{ borderTop: `1px solid ${C.rule}`, color: C.muted }}>
+        {[TextBIcon, TextItalicIcon, LinkSimpleIcon, TextHIcon, ListBulletsIcon].map((I, i) => <span key={i} className="flex size-10 items-center justify-center"><I className="size-5" /></span>)}
+        <span className="ml-auto flex size-10 items-center justify-center"><PlusIcon className="size-5" /></span>
+        <span className="flex size-10 items-center justify-center"><DotsThreeIcon className="size-5" /></span>
+      </div>
+    </div>
+  )
+}
+
 function NoteScreen() {
   return (
-    <div role="img" aria-label="Illustration of Tolaria on iPhone showing the Get familiar with Tolaria note" className="absolute inset-0 text-[15px] leading-[22px]">
+    <div role="img" aria-label={`Illustration of Tolaria on iPhone showing the ${ESSAY.title} essay, with its table, diagram and code`} className="absolute inset-0 text-[15px] leading-[22px]">
       <div aria-hidden className="absolute inset-0">
         <StatusBar />
-        <div className="absolute inset-x-0 top-[54px] bottom-0 overflow-hidden"><Note /></div>
+        <div className="absolute inset-x-0 top-[54px] bottom-0 overflow-hidden"><EssayNote /></div>
         <div className="absolute bottom-2 left-1/2 z-20 h-[5px] w-[140px] -translate-x-1/2 rounded-full bg-black" />
       </div>
     </div>

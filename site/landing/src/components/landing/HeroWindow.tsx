@@ -2,16 +2,18 @@ import { useEffect, useRef, useState } from "react"
 import {
   ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, ArrowsClockwiseIcon, ArrowDownIcon, BookOpenIcon, CaretDownIcon, CaretRightIcon,
   CheckCircleIcon, ClockCounterClockwiseIcon, CodeIcon, DotsThreeIcon, FileTextIcon, FolderOpenIcon, GitBranchIcon, GitCommitIcon,
-  HandHeartIcon, MagnifyingGlassIcon, PlusIcon, SidebarSimpleIcon, SlidersHorizontalIcon, StarIcon, TagIcon, TrayIcon, UsersIcon,
-  WrenchIcon, CheckCircleIcon as DoneIcon, ColumnsIcon, ListBulletsIcon,
+  HandHeartIcon, MagnifyingGlassIcon, PlusIcon, SidebarSimpleIcon, SlidersHorizontalIcon, StarIcon, TrayIcon,
+  CheckCircleIcon as DoneIcon, ColumnsIcon, ListBulletsIcon, LightbulbIcon, CheckIcon,
 } from "@phosphor-icons/react"
+import type { Icon } from "@phosphor-icons/react"
+import { TYPES, ESSAY, VAULT, NoteTable, MermaidFlow, CodeBlock, TypeChip, type TypeKey } from "./mock-notes"
 
 // A live HTML recreation of Tolaria's main window in the LIGHT theme, with the Getting Started vault.
 // Layout, note-list rows, sidebar sections and bottom bar are matched to Karn's 2026-10-26 captures
 // (screens/2026-10-26-hybrid-main.png, -editor-wikilinks.png); light colours sampled from the May light capture
 // and screens/2026-10-26-light-main.png (the fidelity reference): sidebar #f7f6f3, rules #e9e9e7, active row #dfe6f4,
 // Project selection #fcebeb with a #e53e3e rule, text #37352f, muted #787774.
-// Story (12s loop, motion.css .hw): the selection moves from "Get familiar with Tolaria" to "Editor", "Related: [[Tol"
+// Story (12s loop, motion.css .hw): the selection moves from "Get familiar with Tolaria" to the "From notes to essays" Essay (table, Mermaid, code), "Related: [[Tol"
 // is typed (the row gets its unsaved dot), the wikilink picker opens and "Tolaria" is linked, then the bottom bar
 // commits, pushes and shows "Synced just now".
 const W = 1200, H = 690, ROW = 104
@@ -37,7 +39,7 @@ export function HeroWindow({ bare = false }: { bare?: boolean }) {
     <div ref={box} className="w-full" style={{ height: dh * s }}>
       <div
         role="img"
-        aria-label="Illustration of Tolaria's window in the light theme: the sidebar with types and folders, the note list, and the Editor note with the wikilink picker open"
+        aria-label="Illustration of Tolaria's window in the light theme: the sidebar with colour-coded note types, the note list, and an essay with a table, a Mermaid diagram and code, with the wikilink picker open"
         className={`hw loop origin-top-left overflow-hidden bg-white text-left text-[13px] leading-5 ${bare ? "" : "rounded-2xl border border-black/10 shadow-2xl shadow-blue-950/30"}`}
         style={{ width: dw, height: dh, transform: `scale(${s})`, color: C.ink, ["--row" as string]: `${ROW}px` }}
       >
@@ -59,30 +61,27 @@ export function HeroWindow({ bare = false }: { bare?: boolean }) {
 
 function Sidebar() {
   return (
-    <div className="flex w-[214px] shrink-0 flex-col" style={{ background: C.side, borderRight: `1px solid ${C.rule}` }}>
+    <div className="flex w-[214px] shrink-0 flex-col overflow-hidden" style={{ background: C.side, borderRight: `1px solid ${C.rule}` }}>
       <div className="flex h-11 shrink-0 items-center gap-2 px-3.5">
         <span className="size-3 rounded-full bg-[#ff5f57]" /><span className="size-3 rounded-full bg-[#febc2e]" /><span className="size-3 rounded-full bg-[#28c840]" />
         <span className="ml-4 flex items-center gap-3" style={{ color: C.faint }}><SidebarSimpleIcon className="size-4" /><ArrowLeftIcon className="size-4" /><ArrowRightIcon className="size-4" /></span>
       </div>
       <div className="flex flex-col gap-px px-1.5 pt-1 pb-2" style={{ borderTop: `1px solid ${C.rule}` }}>
-        <Row icon={TrayIcon} label="Inbox" n={20} />
-        <Row icon={FileTextIcon} label="All Notes" n={25} active />
+        <Row icon={TrayIcon} label="Inbox" n={12} />
+        <Row icon={FileTextIcon} label="All Notes" n={3712} active />
         <Row icon={ArchiveIcon} label="Archive" />
       </div>
       <Head label="Views" open={false} />
       <Head label="Types" sliders />
-      <div className="flex flex-col gap-px px-1.5 pb-2">
-        <Row icon={FileTextIcon} label="notes" color="#2fa36b" />
-        <Row icon={UsersIcon} label="People" n={1} color="#d9a21b" />
-        <Row icon={WrenchIcon} label="Projects" n={2} color="#e53e3e" />
-        <Row icon={TagIcon} label="Topics" n={1} color="#2fa36b" />
-        <Row icon={FileTextIcon} label="types" color={C.ink} />
+      <div className="flex min-h-0 flex-1 flex-col gap-px overflow-hidden px-1.5 pb-2">
+        {SIDE_TYPES.map((k) => { const t = TYPES[k]; return <Row key={k} icon={t.icon} label={t.label} n={t.n} color={t.color} /> })}
       </div>
-      <Head label="Folders" />
-      <div className="px-1.5"><Row icon={FolderOpenIcon} label="Getting Started" color={C.ink} fill /></div>
+      <Head label="Folders" open={false} />
     </div>
   )
 }
+// A selection of the types in a real Refactoring vault, in its sidebar order (all colours, top to bottom).
+const SIDE_TYPES: TypeKey[] = ["project", "responsibility", "operation", "essay", "interview", "evergreen", "topic", "reading", "digest", "event", "person", "idea", "agent"]
 function Head({ label, open = true, sliders }: { label: string; open?: boolean; sliders?: boolean }) {
   const Car = open ? CaretDownIcon : CaretRightIcon
   return (
@@ -92,28 +91,30 @@ function Head({ label, open = true, sliders }: { label: string; open?: boolean; 
     </div>
   )
 }
-function Row({ icon: I, label, n, active, color, fill }: { icon: typeof FileTextIcon; label: string; n?: number; active?: boolean; color?: string; fill?: boolean }) {
+function Row({ icon: I, label, n, active, color, fill }: { icon: Icon; label: string; n?: number; active?: boolean; color?: string; fill?: boolean }) {
   return (
-    <div className="flex h-[30px] items-center gap-2.5 rounded-md px-2 text-[13.5px]" style={active ? { background: C.active, color: C.blue, fontWeight: 500 } : undefined}>
+    <div className="flex h-[30px] shrink-0 items-center gap-2.5 rounded-md px-2 text-[13.5px]" style={active ? { background: C.active, color: C.blue, fontWeight: 500 } : undefined}>
       <I weight={active || fill ? "fill" : "regular"} className="size-[17px] shrink-0" style={{ color: active ? C.blue : color ?? C.ink }} />
       <span className="flex-1 truncate">{label}</span>
       {n !== undefined && (
-        <span className="min-w-6 rounded-full px-1.5 text-center text-[11px] leading-[18px] font-medium" style={active ? { background: C.blue, color: "#fff" } : { background: "#ebeae7", color: C.muted }}>{n}</span>
+        <span className="min-w-6 rounded-full px-1.5 text-center text-[11px] leading-[18px] font-medium tabular-nums" style={active ? { background: C.blue, color: "#fff" } : { background: "#ebeae7", color: C.muted }}>{n}</span>
       )}
     </div>
   )
 }
 
-const NOTES: [string, string, string, ("project" | "note")][] = [
-  ["AI in Tolaria", "Tolaria embraces AI without making it a requirement. Choose between coding agents...", "October 26, 2026", "note"],
-  ["Editor", "The editor is where you write and edit your notes. Tolaria supports two modes: The...", "October 26, 2026", "note"],
+// Row 2 is the rich Essay the story ends on; row 3 is the Project it starts on (see .sel in motion.css).
+const NOTES: [string, string, string, TypeKey][] = [
+  ["Writing is thinking", "You don't write down what you think. You find out what you think by trying to write it down, again and...", "October 27, 2026", "evergreen"],
+  [ESSAY.title, ESSAY.lede, "October 27, 2026", "essay"],
   ["Get familiar with Tolaria", "Use this checklist as a 15–20 minute tour of Tolaria. Every link opens a real file you can...", "October 26, 2026", "project"],
-  ["Git and AutoGit", "Tolaria vaults have first-class, optional Git support. You retain control over when to...", "October 26, 2026", "note"],
-  ["Project Dashboard", "The block below is stored as fenced HTML inside this Markdown note. Tolaria renders it...", "October 25, 2026", "project"],
-  ["Principles", "Tolaria is built on a few core principles that guide our design decisions: Your notes are...", "October 25, 2026", "note"],
-  ["Make It Yours", "A few settings change how Tolaria looks and feels. Open Settings with Cmd+, or Ctrl+,...", "October 25, 2026", "note"],
+  ["A Philosophy of Software Design", "Deep modules: simple interfaces that hide a lot of complexity. Highlights and notes from chapters 4–6...", "October 26, 2026", "reading"],
+  ["Agents need context, not prompts", "The best agent setups I've seen don't have clever prompts. They have great context: docs, decisions...", "October 25, 2026", "idea"],
+  ["Jordan Lee", "Staff engineer, platform team. Met at the meetup in Milan; wants to compare notes on onboarding docs...", "October 25, 2026", "person"],
+  ["Weekly digest #42", "Seven reads from this week: monorepos, on-call fatigue, writing design docs, and one great essay on...", "October 24, 2026", "digest"],
 ]
 function NoteList() {
+  const a = TYPES.project, b = TYPES.essay
   return (
     <div className="flex w-[276px] shrink-0 flex-col bg-white" style={{ borderRight: `1px solid ${C.rule}` }}>
       <div className="flex h-11 shrink-0 items-center gap-2.5 px-4" style={{ borderBottom: `1px solid ${C.rule}` }}>
@@ -122,22 +123,25 @@ function NoteList() {
         <span className="flex items-center gap-2.5" style={{ color: C.muted }}><MagnifyingGlassIcon className="size-4" /><SlidersHorizontalIcon className="size-4" /><PlusIcon className="size-4" /></span>
       </div>
       <div className="relative flex-1 overflow-hidden">
-        {/* selection: starts on "Get familiar" (row 3, Project tint), moves up to "Editor" (row 2, neutral tint) */}
+        {/* selection, tinted by the note's type: starts on the Project (row 3), moves up to the Essay (row 2) */}
         <div className="sel absolute inset-x-0" style={{ top: ROW, height: ROW }}>
-          <div className="sel-b absolute inset-0 border-l-[3px] border-[#b4b3b0] bg-[#f0f0ef]" />
-          <div className="sel-a absolute inset-0 border-l-[3px] border-[#e53e3e] bg-[#fcebeb]" />
+          <div className="sel-b absolute inset-0 border-l-[3px]" style={{ background: b.tint, borderColor: b.color }} />
+          <div className="sel-a absolute inset-0 border-l-[3px]" style={{ background: a.tint, borderColor: a.color }} />
         </div>
-        {NOTES.map(([t, b, d, k]) => (
-          <div key={t} className="relative flex flex-col px-4 pt-3" style={{ height: ROW, borderBottom: `1px solid ${C.rule}` }}>
-            <div className="flex items-center gap-1.5">
-              {t === "Editor" && <span className="mod-dot absolute top-[19px] left-[7px] size-1.5 rounded-full bg-[#2fa36b]" />}
-              <span className="flex-1 truncate text-[13.5px] leading-5 font-semibold" style={{ color: C.head }}>{t}</span>
-              {k === "project" ? <WrenchIcon className="size-3.5 shrink-0 text-[#e53e3e]" /> : <FileTextIcon className="size-3.5 shrink-0" style={{ color: C.faint }} />}
+        {NOTES.map(([t, body, d, k]) => {
+          const I = TYPES[k].icon
+          return (
+            <div key={t} className="relative flex flex-col px-4 pt-3" style={{ height: ROW, borderBottom: `1px solid ${C.rule}` }}>
+              <div className="flex items-center gap-1.5">
+                {k === "essay" && <span className="mod-dot absolute top-[19px] left-[7px] size-1.5 rounded-full bg-[#2fa36b]" />}
+                <span className="flex-1 truncate text-[13.5px] leading-5 font-semibold" style={{ color: C.head }}>{t}</span>
+                <I className="size-3.5 shrink-0" style={{ color: TYPES[k].color }} />
+              </div>
+              <div className="mt-1.5 line-clamp-2 text-[12px] leading-4" style={{ color: C.muted }}>{body}</div>
+              <div className="mt-auto mb-2.5 flex justify-between text-[10.5px] leading-4" style={{ color: C.faint }}><span>{d}</span><span>Created {d}</span></div>
             </div>
-            <div className="mt-1.5 line-clamp-2 text-[12px] leading-4" style={{ color: C.muted }}>{b}</div>
-            <div className="mt-auto mb-2.5 flex justify-between text-[10.5px] leading-4" style={{ color: C.faint }}><span>{d}</span><span>Created {d}</span></div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -148,7 +152,7 @@ function EditorTop({ compact }: { compact: boolean }) {
   return (
     <div className="flex h-11 shrink-0 items-center gap-1.5 px-5 text-[12.5px]" style={{ borderBottom: `1px solid ${C.rule}` }}>
       <span className="relative inline-flex h-5 items-center">
-        <span className="crumb-b flex items-center gap-1.5"><span style={{ color: C.muted }}>Note</span><CaretRightIcon className="size-3" style={{ color: C.faint }} /><span className="font-medium" style={{ color: C.head }}>tolaria-editor</span></span>
+        <span className="crumb-b flex items-center gap-1.5"><span style={{ color: C.muted }}>Essay</span><CaretRightIcon className="size-3" style={{ color: C.faint }} /><span className="font-medium" style={{ color: C.head }}>{ESSAY.slug}</span></span>
         <span className="crumb-a absolute inset-y-0 left-0 flex items-center gap-1.5 whitespace-nowrap bg-white"><span style={{ color: C.muted }}>Project</span><CaretRightIcon className="size-3" style={{ color: C.faint }} /><span className="font-medium" style={{ color: C.head }}>get-familiar-with-tolaria</span></span>
       </span>
       <span className="ml-auto flex items-center gap-3.5" style={{ color: C.muted }}>{icons.map((I, i) => <I key={i} className="size-4" />)}</span>
@@ -156,52 +160,59 @@ function EditorTop({ compact }: { compact: boolean }) {
   )
 }
 
-const PICK: [string, string][] = [["Tolaria", "Topic"], ["AI in Tolaria", "Note"], ["Principles", "Note"], ["Editor", "Note"], ["Note List", "Note"]]
+// The wikilink picker after "[[Tol": matching notes, each with its type's icon and colour.
+const PICK: [string, TypeKey][] = [["Tolaria", "topic"], ["Get familiar with Tolaria", "project"], ["Tolerance for ambiguity", "evergreen"], ["Tolkien on worldbuilding", "reading"], ["Tolaria 2026.10.26", "release"]]
+const P = "text-[15px] leading-6"
 function Editor({ compact }: { compact: boolean }) {
+  const pad = compact ? "px-7" : "px-16"
   return (
-    <div className={`relative flex-1 overflow-hidden pt-12 ${compact ? "px-7" : "px-[84px]"}`}>
+    <div className={`relative flex-1 overflow-hidden pt-9 ${pad}`}>
       <div className="ed-b">
-      <div className="text-[34px] leading-10 font-bold tracking-[-0.01em]" style={{ color: C.head }}>Editor</div>
-      <div className="mt-4 h-px" style={{ background: C.rule }} />
-      <p className="mt-4 text-[15px] leading-6">The editor is where you write and edit your notes. Tolaria supports two modes:</p>
-      <div className="relative mt-3 text-[15px] leading-6">
+      <div className="text-[32px] leading-10 font-bold tracking-[-0.01em]" style={{ color: C.head }}>{ESSAY.title}</div>
+      <div className="mt-1.5 flex items-center gap-1.5 text-[12px] leading-5"><TypeChip k="essay" /><span className="rounded-[0.3em] px-[0.45em]" style={{ background: "var(--color-yellow-50)", color: "var(--color-yellow-700)" }}>Draft</span></div>
+      <div className="mt-3 h-px" style={{ background: C.rule }} />
+      <p className={`mt-3 ${P}`}>{ESSAY.lede}</p>
+      <div className={`relative mt-2 ${P}`}>
         <span className="line inline-flex items-baseline whitespace-nowrap">
           <span className="typed shrink-0" style={{ ["--mask" as string]: "#fff" }}>
             Related: [[Tol
             <span className="mask" /><span className="track"><span className="caret-wrap absolute inset-y-0 right-0 w-0"><span className="caret" /></span></span>
           </span>
         </span>
-        <span className="link absolute top-0 left-0 whitespace-nowrap">Related: <span className="rounded px-0.5 underline decoration-[#2c5cf6]/40 underline-offset-4" style={{ color: C.blue }}>Tolaria</span></span>
-        <div className="pop absolute top-8 left-[56px] z-10 w-[270px] overflow-hidden rounded-lg border bg-white py-1 shadow-xl" style={{ borderColor: C.rule }}>
-          {(compact ? PICK.slice(0, 4) : PICK).map(([t, k], i) => (
-            <div key={t} className="relative flex h-8 items-center gap-2 px-3 text-[13px]" style={i === 0 ? { background: "#f1f4fd" } : undefined}>
-              {i === 0 && <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: C.blue }} />}
-              {k === "Topic" ? <TagIcon className="size-4" style={{ color: C.muted }} /> : <FileTextIcon className="size-4" style={{ color: C.muted }} />}
-              <span className="flex-1 truncate">{t}</span>
-              <span className="rounded-full px-2 text-[11px] leading-[18px]" style={k === "Topic" ? { background: "#e6f4ec", color: "#1f7a4d" } : { background: "#efefed", color: C.muted }}>{k}</span>
-            </div>
-          ))}
+        <span className="link absolute top-0 left-0 whitespace-nowrap">Related: <span className="rounded px-0.5 underline underline-offset-4" style={{ color: TYPES.topic.deep, textDecorationColor: TYPES.topic.color }}>Tolaria</span></span>
+        <div className="pop absolute top-8 left-[56px] z-10 w-[320px] overflow-hidden rounded-lg border bg-white py-1 shadow-xl" style={{ borderColor: C.rule }}>
+          {(compact ? PICK.slice(0, 4) : PICK).map(([t, k], i) => {
+            const ty = TYPES[k], I = ty.icon
+            return (
+              <div key={t} className="relative flex h-8 items-center gap-2 px-3 text-[13px]" style={i === 0 ? { background: "#f1f4fd" } : undefined}>
+                {i === 0 && <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: C.blue }} />}
+                <I className="size-4 shrink-0" style={{ color: ty.color }} />
+                <span className="flex-1 truncate">{t}</span>
+                <span className="rounded-full px-2 text-[11px] leading-[18px]" style={{ background: ty.tint, color: ty.deep }}>{ty.one}</span>
+              </div>
+            )
+          })}
         </div>
       </div>
-      <div className="mt-7 text-[21px] leading-7 font-bold" style={{ color: C.head }}>WYSIWYG mode</div>
-      <p className="mt-2 text-[15px] leading-6">The default mode. You type naturally and see formatted output.</p>
-      {!compact && (
-        <>
-          <div className="mt-3 border-l-[3px] pl-3.5 text-[15px] leading-6" style={{ borderColor: C.blue, color: C.muted }}>Quote from a wise author</div>
-          <div className="mt-3 flex flex-col gap-2 text-[15px] leading-6">
-            {["Task 1", "Task 2"].map((t) => <div key={t} className="flex items-center gap-2.5"><span className="size-4 rounded border" style={{ borderColor: "#c9c8c5" }} />{t}</div>)}
-          </div>
-        </>
-      )}
+      <div className="mt-4 text-[14px]"><NoteTable /></div>
+      {!compact && <div className="mt-3 text-[14px]"><MermaidFlow /></div>}
+      {!compact && <div className="mt-3 text-[14px]"><CodeBlock /></div>}
       </div>
-      <div className={`ed-a absolute inset-0 bg-white pt-12 ${compact ? "px-7" : "px-[84px]"}`}>
-        <div className="text-[34px] leading-10 font-bold tracking-[-0.01em]" style={{ color: C.head }}>Get familiar with Tolaria</div>
-        <div className="mt-4 h-px" style={{ background: C.rule }} />
-        <p className="mt-4 text-[15px] leading-6">Use this checklist as a 15–20 minute tour of Tolaria. Every link opens a real file you can inspect, edit, and restore with Git.</p>
-        <p className="mt-2 text-[15px] leading-6"><code className="rounded bg-[#efefed] px-1.5 py-0.5 font-mono text-[13px]">Cmd+click</code> on wikilinks to navigate</p>
+      <div className={`ed-a absolute inset-0 bg-white pt-9 ${pad}`}>
+        <div className="text-[32px] leading-10 font-bold tracking-[-0.01em]" style={{ color: C.head }}>Get familiar with Tolaria</div>
+        <div className="mt-1.5 flex items-center gap-1.5 text-[12px] leading-5"><TypeChip k="project" /><span className="rounded-[0.3em] px-[0.45em]" style={{ background: "var(--color-orange-50)", color: "var(--color-orange-700)" }}>In progress</span></div>
+        <div className="mt-3 h-px" style={{ background: C.rule }} />
+        <p className={`mt-3 ${P}`}>Use this checklist as a 15–20 minute tour of Tolaria. Every link opens a real file you can inspect, edit, and restore with Git.</p>
+        <div className="mt-3 flex items-start gap-2.5 rounded-lg px-3.5 py-2.5 text-[14px] leading-6" style={{ background: "var(--color-blue-50)" }}>
+          <LightbulbIcon weight="fill" className="mt-1 size-4 shrink-0" style={{ color: "var(--color-blue-500)" }} />
+          <span><code className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[12.5px]">Cmd+click</code> a wikilink to open it</span>
+        </div>
         <div className="mt-3 flex flex-col gap-2.5 text-[14.5px] leading-6">
-          {([["Read the", "Tolaria Principles", "understand the core philosophy"], ["Explore the", "Sidebar", "learn Inbox, All Notes, Archive, Favorites, Types, Folders"], ["Browse the", "Note List", "sorting, display properties, search within list"], ["Open the", "Project Dashboard", "see a Markdown note render its own properties"]] as const).map(([a, l, b]) => (
-            <div key={l} className="flex items-start gap-2.5"><span className="mt-1 size-4 shrink-0 rounded border" style={{ borderColor: "#c9c8c5" }} /><span><b className="font-semibold">{a}</b> <span className="underline decoration-dashed decoration-1 underline-offset-4" style={{ color: l === "Project Dashboard" ? "#e53e3e" : C.muted }}>{l}</span> — {b}</span></div>
+          {([["Read the", "Tolaria Principles", "understand the core philosophy", true], ["Explore the", "Sidebar", "learn Inbox, All Notes, Archive, Favorites, Types, Folders", false], ["Browse the", "Note List", "sorting, display properties, search within list", false], ["Open the", "Project Dashboard", "see a Markdown note render its own properties", false]] as const).map(([a, l, b, done]) => (
+            <div key={l} className="flex items-start gap-2.5">
+              <span className="mt-1 flex size-4 shrink-0 items-center justify-center rounded border" style={done ? { background: C.blue, borderColor: C.blue } : { borderColor: "#c9c8c5" }}>{done && <CheckIcon weight="bold" className="size-3 text-white" />}</span>
+              <span style={done ? { color: C.faint } : undefined}><b className="font-semibold">{a}</b> <span className="underline decoration-dashed decoration-1 underline-offset-4" style={{ color: l === "Project Dashboard" ? TYPES.project.color : C.muted }}>{l}</span> — {b}</span>
+            </div>
           ))}
         </div>
       </div>
@@ -212,7 +223,7 @@ function Editor({ compact }: { compact: boolean }) {
 function BottomBar({ compact }: { compact: boolean }) {
   return (
     <div className="flex h-8 shrink-0 items-center gap-4 px-3.5 text-[12px] whitespace-nowrap" style={{ background: C.side, borderTop: `1px solid ${C.rule}`, color: C.muted }}>
-      {!compact && <><span className="flex items-center gap-1.5"><FolderOpenIcon className="size-3.5" />Getting Started</span><span>2026.10.26</span></>}
+      {!compact && <><span className="flex items-center gap-1.5"><FolderOpenIcon className="size-3.5" />{VAULT}</span><span>2026.10.26</span></>}
       <span className="flex items-center gap-1"><GitBranchIcon className="size-3.5" />main</span>
       <span className="commit-btn inline-flex items-center gap-1 rounded-md"><GitCommitIcon className="size-3.5" />Commit</span>
       <span className="relative inline-flex h-5 w-[130px] items-center">

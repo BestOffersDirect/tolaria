@@ -125,7 +125,7 @@ function Hero() {
 // sits slightly left of centre and the iPhone overlaps its bottom-right corner, so the pair reads as one composition.
 function Showcase() {
   return (
-    <section aria-label="Illustrations of Tolaria on a MacBook and an iPhone, with the Getting Started vault" className="hero-overlap relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
+    <section aria-label="Illustrations of Tolaria on a MacBook and an iPhone, with the colour-coded note types" className="hero-overlap relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
       <div className="relative pb-10 sm:pb-12">
         <div className="rise relative mx-auto max-w-[1000px]" style={{ ["--i" as string]: 5 }}>
           <MacBook className="relative z-10 w-[92%] sm:w-[86%] lg:w-[84%]" />

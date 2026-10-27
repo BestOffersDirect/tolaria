@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
-import { CaretRightIcon, CheckIcon, CodeIcon, DotsThreeIcon, FileTextIcon, GitCommitIcon, RocketIcon, StarIcon } from "@phosphor-icons/react"
+import { CaretRightIcon, CodeIcon, DotsThreeIcon, FileTextIcon, GitCommitIcon, StarIcon } from "@phosphor-icons/react"
+import { ESSAY, ESSAY_RAW, NoteTable, MermaidFlow, CodeBlock, TypeChip } from "./mock-notes"
 import { PhoneWindow } from "./PhoneWindow"
 
 // Signature moment, "Peel to Markdown" (feedback/r5-spec.md): a short pinned stage under the hero. The rendered note
@@ -8,18 +9,10 @@ import { PhoneWindow } from "./PhoneWindow"
 // Below 768px or under reduced motion there is no pinning: the three steps render as a static row/stack.
 const C = { rule: "#e9e9e7", ink: "#37352f", head: "#2f2d27", muted: "#787774", faint: "#9b9a97", blue: "#2c5cf6" }
 const STEPS = [
-  ["Write in a real editor", "Blocks, wikilinks, checklists and properties, with no export step."],
+  ["Write in a real editor", "Tables, diagrams, code, wikilinks and properties, with no export step."],
   ["It's a plain Markdown file", "YAML frontmatter on top, your words below. Open it in any editor or grep it."],
   ["Git takes it everywhere", "Commit and push from the app, then open the same note on your iPhone."],
 ] as const
-const RAW: [string, string][] = [
-  ["text-neutral-400", "---"], ["", "type: Project"], ["", "status: In progress"], ["", "related:"], ["", "  - \"[[Tolaria Principles]]\""], ["text-neutral-400", "---"], ["", ""],
-  ["font-semibold text-neutral-900", "# Get familiar with Tolaria"], ["", ""],
-  ["", "Use this checklist as a 15–20 minute tour of"], ["", "Tolaria. Every link opens a real file you can"], ["", "inspect, edit, and restore with Git."], ["", ""],
-  ["", "- [x] Read the [[Tolaria Principles]]"], ["", "- [ ] Explore the [[tolaria-sidebar]]"], ["", "- [ ] Browse the [[tolaria-note-list]]"],
-]
-const TASKS = [["Read the", "Tolaria Principles", true], ["Explore the", "tolaria-sidebar", false], ["Browse the", "tolaria-note-list", false]] as const
-
 const RUN = 1200
 const MOTION = "(min-width: 768px) and (prefers-reduced-motion: no-preference)"
 const ease = (t: number) => 1 - (1 - t) ** 3
@@ -77,7 +70,7 @@ export function Peel() {
               </ol>
             </div>
             <div className="relative mx-auto aspect-[16/11] w-full overflow-clip rounded-3xl bg-app-tint max-w-[min(760px,calc(52dvh*16/11))] lg:max-w-[min(760px,calc(70dvh*16/11))]" aria-hidden>
-              <div className="peel-raw absolute inset-[6%_14%_10%_5%] origin-center"><RawFile /></div>
+              <div className="peel-raw absolute inset-[5%_14%_6%_5%] origin-center"><RawFile /></div>
               {/* at rest one whole card (same radius, border and shadow as the .md card); the two halves take over only
                   once peeling starts, so there is no seam or square corner at p=0. Each half's shadow is a drop-shadow on
                   an unclipped wrapper, because clip-path would cut a box-shadow off. */}
@@ -124,27 +117,22 @@ function Head() {
 }
 const Num = ({ n }: { n: number }) => <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">{n}</span>
 
+// The rendered half and the .md half show the same note: the Essay the hero window ends on (mock-notes.tsx).
 function Rendered({ small = false }: { small?: boolean }) {
   return (
     <div className="flex size-full flex-col bg-white text-left" style={{ color: C.ink }}>
       <div className="flex h-10 shrink-0 items-center gap-2 px-4 text-[12px]" style={{ borderBottom: `1px solid ${C.rule}`, background: "#f7f6f3" }}>
         <span className="size-2.5 rounded-full bg-[#ff5f57]" /><span className="size-2.5 rounded-full bg-[#febc2e]" /><span className="size-2.5 rounded-full bg-[#28c840]" />
-        <span className="ml-3 flex min-w-0 items-center gap-1.5 truncate"><span style={{ color: C.muted }}>Project</span><CaretRightIcon className="size-3" style={{ color: C.faint }} /><span className="truncate font-medium" style={{ color: C.head }}>get-familiar-with-tolaria</span></span>
+        <span className="ml-3 flex min-w-0 items-center gap-1.5 truncate"><span style={{ color: C.muted }}>Essay</span><CaretRightIcon className="size-3" style={{ color: C.faint }} /><span className="truncate font-medium" style={{ color: C.head }}>{ESSAY.slug}</span></span>
         {!small && <span className="ml-auto flex items-center gap-3" style={{ color: C.muted }}><StarIcon className="size-4" /><CodeIcon className="size-4" /><DotsThreeIcon className="size-4" /></span>}
       </div>
-      <div className={small ? "p-4" : "px-[9%] pt-[6%]"}>
-        <div className={`${small ? "text-lg leading-6" : "text-[clamp(20px,2.4vw,30px)] leading-tight"} font-bold`} style={{ color: C.head }}>Get familiar with Tolaria</div>
-        <div className="mt-2 flex gap-1.5 text-[11px]"><span className="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 text-red-700"><RocketIcon weight="fill" className="size-3" />Project</span><span className="rounded bg-orange-50 px-1.5 text-orange-700">In progress</span></div>
+      <div className={small ? "p-4 text-[11px]" : "px-[8%] pt-[5%] text-[clamp(11px,1vw,14px)]"}>
+        <div className={`${small ? "text-lg leading-6" : "text-[clamp(20px,2.3vw,30px)] leading-tight"} font-bold`} style={{ color: C.head }}>{ESSAY.title}</div>
+        <div className="mt-2 flex gap-1.5 text-[11px] leading-[18px]"><TypeChip k="essay" /><span className="rounded-[0.3em] px-[0.45em]" style={{ background: "var(--color-yellow-50)", color: "var(--color-yellow-700)" }}>Draft</span></div>
         <div className="mt-3 h-px" style={{ background: C.rule }} />
-        <p className={`mt-3 ${small ? "text-[12px] leading-5" : "text-[clamp(12px,1.15vw,15px)] leading-6"}`}>Use this checklist as a 15–20 minute tour of Tolaria. Every link opens a real file you can inspect, edit, and restore with Git.</p>
-        <div className={`mt-3 flex flex-col gap-2 ${small ? "text-[12px] leading-5" : "text-[clamp(12px,1.15vw,15px)] leading-6"}`}>
-          {TASKS.map(([a, l, done]) => (
-            <div key={l} className="flex items-center gap-2.5">
-              <span className="flex size-4 shrink-0 items-center justify-center rounded border" style={done ? { background: C.blue, borderColor: C.blue } : { borderColor: "#c9c8c5" }}>{done && <CheckIcon weight="bold" className="size-3 text-white" />}</span>
-              <span className="truncate"><b className="font-semibold">{a}</b> <span className="underline decoration-dotted underline-offset-4" style={{ color: C.blue }}>{l}</span></span>
-            </div>
-          ))}
-        </div>
+        <div className="mt-3"><NoteTable /></div>
+        <div className="mt-[0.8em]"><MermaidFlow /></div>
+        {!small && <div className="mt-[0.8em]"><CodeBlock /></div>}
       </div>
     </div>
   )
@@ -154,17 +142,17 @@ function RawFile({ small = false }: { small?: boolean }) {
   return (
     <div className="flex size-full flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
       <div className="flex h-10 shrink-0 items-center gap-2 border-b bg-muted px-4 font-mono text-[12px] text-muted-foreground">
-        <FileTextIcon weight="fill" className="size-4 text-app" />get-familiar-with-tolaria.md
+        <FileTextIcon weight="fill" className="size-4 text-app" />{ESSAY.file}
       </div>
-      <div className={`min-h-0 flex-1 overflow-hidden px-4 py-3 font-mono text-neutral-700 ${small ? "text-[11px] leading-[17px]" : "text-[clamp(10px,1.05vw,14px)] leading-[1.6]"}`}>
-        {(small ? RAW.slice(0, 12) : RAW).map(([c, t], i) => <div key={i} className={`truncate whitespace-pre ${c}`}>{t || "\u00a0"}</div>)}
+      <div className={`min-h-0 flex-1 overflow-hidden px-4 py-3 font-mono text-neutral-700 ${small ? "text-[10px] leading-[15px]" : "text-[clamp(10px,0.9vw,12.5px)] leading-[1.5]"}`}>
+        {ESSAY_RAW.map(([c, t], i) => <div key={i} className={`truncate whitespace-pre ${c}`}>{t || "\u00a0"}</div>)}
       </div>
     </div>
   )
 }
 
 // Glyph resolve (website-motion recipe 17): the filename settles from mono glyphs into its text, left to right, once.
-const FILE = "get-familiar-with-tolaria.md"
+const FILE = ESSAY.file
 function glyph(el: HTMLElement, ms = 700) {
   const pool = "#*/-_=+<>[]01", t0 = performance.now()
   const step = (now: number) => {
