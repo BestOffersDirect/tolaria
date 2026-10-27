@@ -13,10 +13,10 @@ Choose Light, Dark, Hybrid, or System in Settings:
 
 - **Light** — Light sidebar and light note content.
 - **Dark** — Dark sidebar and dark note content.
-- **Hybrid** — Dark sidebar with light note content, for focused reading in a subdued UI.
+- **Hybrid** — Dark sidebar with light note content.
 - **System** — Follows the operating system appearance at runtime.
 
-You can also switch theme mode from the command palette.
+You can also switch to Light, Dark, or System from the command palette. Hybrid is only in Settings for now.
 
 ## Note Width
 

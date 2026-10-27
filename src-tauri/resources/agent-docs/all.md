@@ -1053,10 +1053,10 @@ Choose Light, Dark, Hybrid, or System in Settings:
 
 - **Light** — Light sidebar and light note content.
 - **Dark** — Dark sidebar and dark note content.
-- **Hybrid** — Dark sidebar with light note content, for focused reading in a subdued UI.
+- **Hybrid** — Dark sidebar with light note content.
 - **System** — Follows the operating system appearance at runtime.
 
-You can also switch theme mode from the command palette.
+You can also switch to Light, Dark, or System from the command palette. Hybrid is only in Settings for now.
 
 ## Note Width
 
@@ -1999,7 +1999,7 @@ The public download page points at the latest stable release.
 
 ## Alpha
 
-Alpha follows pushes to `main`. It receives fixes and features earlier, but it can be rougher than Stable. Desktop updates pull from the alpha metadata automatically, and mobile apps on the Alpha channel receive over-the-air (OTA) updates automatically.
+Alpha follows pushes to `main`. It receives fixes and features earlier, but it can be rougher than Stable.
 
 The alpha updater metadata lives at:
 
@@ -2016,7 +2016,12 @@ Compatibility endpoints also point to the alpha metadata:
 
 ## Mobile Channels
 
-The iOS app (iPhone and iPad) includes settings to switch between **Stable** and **Alpha** channels. The selected channel controls which OTA updates the app receives. Mobile Alpha follows desktop Alpha but updates independently through Expo's update service.
+The iPhone and iPad app has its own Release channel setting with **Stable** (the default) and **Alpha**. The channel decides which over-the-air (OTA) updates the app downloads; it does not change the app build you installed.
+
+- Mobile Alpha updates are published from `main` after CI passes, like desktop Alpha.
+- Mobile Stable updates are published manually.
+- The app checks for an update when it launches and again when you return to it. A downloaded update applies on the next launch, or right away with **Restart now** in Settings.
+- OTA updates only cover JavaScript changes compatible with your installed build. Native changes need a new app build from TestFlight.
 
 ## Before Switching
 
