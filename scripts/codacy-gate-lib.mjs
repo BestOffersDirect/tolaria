@@ -14,6 +14,20 @@ function recordAddedLine(lines, lineNumber, source, previousAddedLine) {
 	if (audited) lines.auditedRustUnsafeLines.add(lineNumber);
 }
 
+function hunkStartLine(line) {
+	if (!line.startsWith("@@ -")) return null;
+	const additionStart = line.indexOf("+", 4);
+	if (additionStart === -1) return null;
+	const numberStart = additionStart + 1;
+	const comma = line.indexOf(",", numberStart);
+	const space = line.indexOf(" ", numberStart);
+	const numberEnd =
+		comma === -1 || (space !== -1 && space < comma) ? space : comma;
+	if (numberEnd === -1 || !line.slice(numberEnd).includes("@@")) return null;
+	const value = Number(line.slice(numberStart, numberEnd));
+	return Number.isInteger(value) ? value : null;
+}
+
 export function addedLinesFromDiff(diff, repositoryRoot) {
 	const additions = new Map();
 	let file = null;
@@ -27,9 +41,9 @@ export function addedLinesFromDiff(diff, repositoryRoot) {
 			previousAddedLine = null;
 			continue;
 		}
-		const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-		if (hunk) {
-			nextLine = Number(hunk[1]);
+		const hunkLine = hunkStartLine(line);
+		if (hunkLine !== null) {
+			nextLine = hunkLine;
 			continue;
 		}
 		if (!file || line.startsWith("---")) continue;
