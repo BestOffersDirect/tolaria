@@ -49,16 +49,29 @@ function mergeIncomingSessions(
 		);
 		if (
 			shouldKeepCurrentSession(
-				current[sessionId],
+				getSession(current, sessionId),
 				session,
 				sessionId,
 				preserveCurrentConflicts,
 			)
 		)
 			continue;
-		merged = { ...merged, [sessionId]: session };
+		if (merged === current) merged = { ...current };
+		Object.defineProperty(merged, sessionId, {
+			configurable: true,
+			enumerable: true,
+			value: session,
+			writable: true,
+		});
 	}
 	return merged;
+}
+
+function getSession(
+	sessions: SessionMap,
+	sessionId: SessionId,
+): StoredAiWorkspaceSessionSnapshot | undefined {
+	return Object.getOwnPropertyDescriptor(sessions, sessionId)?.value;
 }
 
 function shouldKeepCurrentSession(
@@ -260,17 +273,22 @@ function publishSessions(nextSessions: SessionMap): void {
 		...Object.keys(currentSessions),
 		...Object.keys(nextSessions),
 	])) {
-		if (currentSessions[sessionId] !== nextSessions[sessionId]) {
+		const nextSession = getSession(nextSessions, sessionId);
+		if (getSession(currentSessions, sessionId) !== nextSession) {
 			locallyUpdatedSessionIds.add(sessionId);
 			const revisionTime = Math.max(Date.now(), lastSessionRevision + 1);
 			lastSessionRevision = revisionTime;
-			versionedSessions = {
-				...versionedSessions,
-				[sessionId]: {
-					...versionedSessions[sessionId],
-					revision: `${String(revisionTime).padStart(16, "0")}:${sessionWriterId}`,
-				},
+			const nextVersionedSession = {
+				...nextSession,
+				revision: `${String(revisionTime).padStart(16, "0")}:${sessionWriterId}`,
 			};
+			versionedSessions = { ...versionedSessions };
+			Object.defineProperty(versionedSessions, sessionId, {
+				configurable: true,
+				enumerable: true,
+				value: nextVersionedSession,
+				writable: true,
+			});
 		}
 	}
 	storeVersion += 1;
@@ -338,7 +356,8 @@ void syncFromNativeStorage();
 export function aiWorkspaceSessionSnapshot(
 	sessionId: SessionId,
 ): AiWorkspaceSessionSnapshot {
-	const source = sessionStore.getSnapshot()[sessionId] ?? EMPTY_SESSION;
+	const source =
+		getSession(sessionStore.getSnapshot(), sessionId) ?? EMPTY_SESSION;
 	const cached = publicSessionSnapshots.get(sessionId);
 	if (cached?.source === source) return cached.snapshot;
 	const snapshot = { messages: source.messages, status: source.status };

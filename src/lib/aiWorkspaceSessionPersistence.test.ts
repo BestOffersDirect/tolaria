@@ -34,10 +34,17 @@ function makeDebouncedSyncStore(
 			const merged = { ...current };
 			for (const [sessionId, session] of Object.entries(incoming)) {
 				if (preserveCurrentConflicts && locallyChanged.has(sessionId)) continue;
-				merged[sessionId] = session;
+				Object.defineProperty(merged, sessionId, {
+					configurable: true,
+					enumerable: true,
+					value: session,
+					writable: true,
+				});
 			}
 			return Object.entries(merged).every(
-				([sessionId, session]) => current[sessionId] === session,
+				([sessionId, session]) =>
+					Object.getOwnPropertyDescriptor(current, sessionId)?.value ===
+					session,
 			)
 				? current
 				: merged;
