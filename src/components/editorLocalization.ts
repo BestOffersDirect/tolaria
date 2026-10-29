@@ -37,27 +37,77 @@ const BLOCKNOTE_DICTIONARIES: Partial<Record<AppLocale, Dictionary>> = {
 	"zh-TW": zhTW,
 };
 
-const SLASH_MENU_LABELS = {
-	paragraph: "editor.blockType.paragraph",
-	heading: "editor.blockType.heading1",
-	heading_2: "editor.blockType.heading2",
-	heading_3: "editor.blockType.heading3",
-	heading_4: "editor.blockType.heading4",
-	heading_5: "editor.blockType.heading5",
-	heading_6: "editor.blockType.heading6",
-	quote: "editor.blockType.quote",
-	bullet_list: "editor.blockType.bulletList",
-	numbered_list: "editor.blockType.numberedList",
-	check_list: "editor.blockType.checklist",
-	code_block: "editor.blockType.codeBlock",
-} as const;
-
 const PLACEHOLDER_STYLE_ID = "tolaria-localized-editor-placeholders";
+
+function blockNoteDictionaryForLocale(locale: AppLocale): Dictionary {
+	return (
+		Object.entries(BLOCKNOTE_DICTIONARIES).find(
+			([candidate]) => candidate === locale,
+		)?.[1] ?? en
+	);
+}
+
+function localizeHeadings(dictionary: Dictionary, locale: AppLocale): void {
+	dictionary.slash_menu.heading.title = translate(
+		locale,
+		"editor.blockType.heading1",
+	);
+	dictionary.slash_menu.heading_2.title = translate(
+		locale,
+		"editor.blockType.heading2",
+	);
+	dictionary.slash_menu.heading_3.title = translate(
+		locale,
+		"editor.blockType.heading3",
+	);
+	dictionary.slash_menu.heading_4.title = translate(
+		locale,
+		"editor.blockType.heading4",
+	);
+	dictionary.slash_menu.heading_5.title = translate(
+		locale,
+		"editor.blockType.heading5",
+	);
+	dictionary.slash_menu.heading_6.title = translate(
+		locale,
+		"editor.blockType.heading6",
+	);
+}
+
+function localizeListsAndBlocks(
+	dictionary: Dictionary,
+	locale: AppLocale,
+): void {
+	dictionary.slash_menu.paragraph.title = translate(
+		locale,
+		"editor.blockType.paragraph",
+	);
+	dictionary.slash_menu.quote.title = translate(
+		locale,
+		"editor.blockType.quote",
+	);
+	dictionary.slash_menu.bullet_list.title = translate(
+		locale,
+		"editor.blockType.bulletList",
+	);
+	dictionary.slash_menu.numbered_list.title = translate(
+		locale,
+		"editor.blockType.numberedList",
+	);
+	dictionary.slash_menu.check_list.title = translate(
+		locale,
+		"editor.blockType.checklist",
+	);
+	dictionary.slash_menu.code_block.title = translate(
+		locale,
+		"editor.blockType.codeBlock",
+	);
+}
 
 export function createBlockNoteDictionary(
 	locale: AppLocale = "en",
 ): Dictionary {
-	const source = BLOCKNOTE_DICTIONARIES[locale] ?? en;
+	const source = blockNoteDictionaryForLocale(locale);
 	const dictionary: Dictionary = {
 		...source,
 		slash_menu: Object.fromEntries(
@@ -68,10 +118,8 @@ export function createBlockNoteDictionary(
 		) as Dictionary["slash_menu"],
 		placeholders: { ...source.placeholders },
 	};
-	for (const [item, key] of Object.entries(SLASH_MENU_LABELS)) {
-		dictionary.slash_menu[item as keyof Dictionary["slash_menu"]].title =
-			translate(locale, key);
-	}
+	localizeHeadings(dictionary, locale);
+	localizeListsAndBlocks(dictionary, locale);
 	dictionary.placeholders.default = translate(locale, "editor.placeholder");
 	return dictionary;
 }
