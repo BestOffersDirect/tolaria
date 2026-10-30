@@ -11,7 +11,7 @@ export function createMockAiStreamHook(): MockAiStreamHook {
       released = 0
     },
     next() {
-      const chunk = chunks[released]
+      const chunk = chunks.at(released)
       if (!chunk) return released
       released += 1
       subscribers.forEach((release) => {
