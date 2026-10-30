@@ -2,7 +2,8 @@
  * Video director: runs inside the real Tolaria app (injected by ./vite.config.ts).
  *
  * A Remotion composition (videos/src/components/TolariaApp.tsx) embeds the app in an
- * iframe and, for every frame it renders, posts `{ type: 'tolaria-video:frame', frame }`.
+ * iframe (`?scene=<id>&parent=<remotion origin>`) and, for every frame it renders, posts
+ * `{ type: 'tolaria-video:frame', frame }`. Messages are origin-checked both ways.
  * The director moves the app to exactly that frame's state, waits for React/BlockNote
  * to settle, measures any named regions the scene asks for, and replies
  * `{ type: 'tolaria-video:ready', frame, rects }`. Remotion only screenshots after that.
@@ -134,26 +135,65 @@ function apply(frame: number) {
 	return run;
 }
 
+/**
+ * The only window allowed to drive the director: the Remotion page that embeds us.
+ * It passes its origin as `?parent=`; we accept it only if it is a loopback http(s)
+ * origin and (where the browser exposes it) matches the real embedding origin.
+ * Every message in or out is pinned to this origin; nothing uses a wildcard.
+ */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+function expectedParentOrigin(): string | null {
+	if (window.parent === window) return null;
+	const requested = params.get("parent");
+	if (!requested) return null;
+	let origin: string;
+	try {
+		const url = new URL(requested);
+		if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+		if (!LOOPBACK_HOSTS.has(url.hostname)) return null;
+		origin = url.origin;
+	} catch {
+		return null;
+	}
+	const embedding = location.ancestorOrigins?.[0];
+	if (embedding && embedding !== origin) return null;
+	return origin;
+}
+
+const parentOrigin = expectedParentOrigin();
+
+function postToParent(message: Record<string, unknown>) {
+	if (!parentOrigin) return;
+	window.parent.postMessage(message, parentOrigin);
+}
+
+function onParentMessage(event: MessageEvent) {
+	if (!parentOrigin || event.origin !== parentOrigin || event.source !== window.parent) return;
+	const data = event.data as { type?: string; frame?: number } | null;
+	if (data?.type !== "tolaria-video:frame" || typeof data.frame !== "number") return;
+	const frame = data.frame;
+	apply(frame).then(
+		(rects) => postToParent({ type: "tolaria-video:ready", frame, rects }),
+		(error) => postToParent({ type: "tolaria-video:error", frame, message: String(error) }),
+	);
+}
+
 async function boot() {
 	installFreezeStyles();
 	if (!scene) throw new Error(`[tolaria-video] unknown scene ${sceneId}`);
+	if (!parentOrigin && window.parent !== window) {
+		console.warn("[tolaria-video] no valid ?parent= origin: frame messages are ignored");
+	}
 	await scene.setup(ctx);
 	await settle(150);
 	window.__tolariaVideo = { apply };
-	window.addEventListener("message", (event) => {
-		const data = event.data as { type?: string; frame?: number } | null;
-		if (data?.type !== "tolaria-video:frame" || typeof data.frame !== "number") return;
-		const frame = data.frame;
-		apply(frame).then(
-			(rects) => event.source?.postMessage({ type: "tolaria-video:ready", frame, rects }, { targetOrigin: "*" }),
-			(error) => event.source?.postMessage({ type: "tolaria-video:error", frame, message: String(error) }, { targetOrigin: "*" }),
-		);
-	});
-	window.parent?.postMessage({ type: "tolaria-video:boot", scene: sceneId }, "*");
+	window.addEventListener("message", onParentMessage);
+	postToParent({ type: "tolaria-video:boot", scene: sceneId });
 	document.documentElement.dataset.tolariaVideoReady = "true";
 }
 
 boot().catch((error) => {
 	console.error(error);
-	window.parent?.postMessage({ type: "tolaria-video:error", frame: -1, message: String(error) }, "*");
+	postToParent({ type: "tolaria-video:error", frame: -1, message: String(error) });
 });

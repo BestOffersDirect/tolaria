@@ -15,7 +15,8 @@ import { continueRender, delayRender, useCurrentFrame } from 'remotion';
 export type AppRect = { x: number; y: number; width: number; height: number };
 export type AppRects = Record<string, AppRect>;
 
-export const TOLARIA_UI_ORIGIN = process.env.REMOTION_TOLARIA_UI_ORIGIN ?? 'http://localhost:5320';
+/** Origin of `pnpm ui`; every message to and from the iframe is pinned to it. */
+export const TOLARIA_UI_ORIGIN = new URL(process.env.REMOTION_TOLARIA_UI_ORIGIN ?? 'http://localhost:5320').origin;
 
 interface TolariaAppProps {
   scene: string;
@@ -47,12 +48,12 @@ export const TolariaApp: React.FC<TolariaAppProps> = ({ scene, width, height, fr
   onRectsRef.current = onRects;
 
   const post = (f: number) => {
-    iframe.current?.contentWindow?.postMessage({ type: 'tolaria-video:frame', frame: f }, '*');
+    iframe.current?.contentWindow?.postMessage({ type: 'tolaria-video:frame', frame: f }, TOLARIA_UI_ORIGIN);
   };
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<DirectorMessage>) => {
-      if (event.source !== iframe.current?.contentWindow) return;
+      if (event.origin !== TOLARIA_UI_ORIGIN || event.source !== iframe.current?.contentWindow) return;
       const data = event.data;
       if (data?.type === 'tolaria-video:boot') {
         setBooted((was) => {
@@ -88,7 +89,7 @@ export const TolariaApp: React.FC<TolariaAppProps> = ({ scene, width, height, fr
     <iframe
       ref={iframe}
       title={`tolaria-${scene}`}
-      src={`${TOLARIA_UI_ORIGIN}/?scene=${encodeURIComponent(scene)}`}
+      src={`${TOLARIA_UI_ORIGIN}/?scene=${encodeURIComponent(scene)}&parent=${encodeURIComponent(window.location.origin)}`}
       style={{ width, height, border: 0, display: 'block', background: '#fff', ...style }}
     />
   );

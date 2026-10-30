@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
+import { Img } from 'remotion';
 import { useBrandMark } from '../lib/brandLocal';
 
-/** A Refactoring hand-drawn mark, drawn on by the brand runtime at time tMs (seek-safe). */
+/**
+ * A Refactoring hand-drawn mark, drawn on by the brand runtime at time tMs (seek-safe).
+ * The frame's SVG is shown as an <img> data URI (no innerHTML); Remotion's <Img>
+ * holds the frame until it has decoded.
+ */
 export const BrandMark: React.FC<{
   name: string;
   tMs: number;
@@ -13,17 +18,19 @@ export const BrandMark: React.FC<{
   rotate?: number;
 }> = ({ name, tMs, color, x, y, width, height, rotate = 0 }) => {
   const mark = useBrandMark(name);
-  const svg = useMemo(() => {
+  const src = useMemo(() => {
     if (!mark || tMs <= 0) return '';
-    return mark.runtime
-      .frameSVG(mark.spec, tMs, { color, id: `${name}-mark`, width: '100%', height: '100%' })
-      .replace('<svg ', '<svg preserveAspectRatio="none" style="display:block;overflow:visible" ');
-  }, [mark, tMs, color, name]);
-  if (!svg) return null;
+    const svg = mark.runtime
+      .frameSVG(mark.spec, tMs, { color, id: `${name}-mark`, width: String(width), height: String(height) })
+      .replace('<svg ', '<svg preserveAspectRatio="none" ');
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  }, [mark, tMs, color, name, width, height]);
+  if (!src) return null;
   return (
-    <div
-      style={{ position: 'absolute', left: x, top: y, width, height, transform: `rotate(${rotate}deg)`, pointerEvents: 'none' }}
-      dangerouslySetInnerHTML={{ __html: svg }}
+    <Img
+      src={src}
+      alt=""
+      style={{ position: 'absolute', left: x, top: y, width, height, transform: `rotate(${rotate}deg)`, pointerEvents: 'none', overflow: 'visible' }}
     />
   );
 };
